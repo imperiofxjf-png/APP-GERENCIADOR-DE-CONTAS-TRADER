@@ -769,7 +769,7 @@
         }
     }
 
-    // ==================== CALCULADORA DE DISTANCIAMENTO PROGRESSIVO CORRIGIDA ====================
+    // ==================== CALCULADORA DE DISTANCIAMENTO PROGRESSIVO CORRIGIDA (FORMATAÇÃO 2 casas decimais) ====================
     function calculateGridDistance() {
         // Pegar os valores dos inputs
         const lotSize = parseFloat(document.getElementById('gridLotSize').value);
@@ -836,7 +836,7 @@
         // Valor da ordem mais distante para referência
         const maxOrderCost = ordersDetails[0].custoIndividual;
         
-        // Exibir resultados
+        // Exibir resultados com formatação de 2 casas decimais
         let resultHTML = `
             <strong>📊 RESULTADO DO GRID PROGRESSIVO</strong><br><br>
             <div class="grid-lotes-destaque">📈 ${numberOfOrders} ORDENS NO TOTAL</div>
@@ -845,11 +845,11 @@
             <div>🔹 Cobertura total: ${totalDistance.toLocaleString()} pontos</div>
             <hr style="margin: 10px 0; border-color: #3a3f5e;">
             <div><strong>💰 Valor por ponto:</strong> R$ ${pointValue.toFixed(6)} (${(pointValue * 1000).toFixed(3)} milésimos)</div>
-            <div><strong>💰 Custo da ordem mais distante (ordem 0):</strong> R$ ${maxOrderCost.toFixed(4)}</div>
-            <div><strong>📊 Custo da ordem mais próxima (ordem ${numberOfOrders-1}):</strong> R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(4)}</div>
+            <div><strong>💰 Custo da ordem mais distante (ordem 0):</strong> R$ ${maxOrderCost.toFixed(2)}</div>
+            <div><strong>📊 Custo da ordem mais próxima (ordem ${numberOfOrders-1}):</strong> R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</div>
             <hr style="margin: 10px 0; border-color: #3a3f5e;">
-            <div><strong>💰 Custo TOTAL de TODAS as ${numberOfOrders} ordens:</strong> <span class="profit-positive" style="font-size: 1.3em;">R$ ${totalCostAllOrders.toFixed(4)}</span></div>
-            <div><strong>📊 Custo médio por ordem:</strong> R$ ${(totalCostAllOrders / numberOfOrders).toFixed(4)}</div>
+            <div><strong>💰 Custo TOTAL de TODAS as ${numberOfOrders} ordens:</strong> <span class="profit-positive" style="font-size: 1.3em;">R$ ${totalCostAllOrders.toFixed(2)}</span></div>
+            <div><strong>📊 Custo médio por ordem:</strong> R$ ${(totalCostAllOrders / numberOfOrders).toFixed(2)}</div>
         `;
         
         // Adicionar tabela detalhada (da ordem mais próxima para a mais distante)
@@ -880,8 +880,8 @@
                     <td style="text-align: center;"><strong>${order.ordem}</strong></td>
                     <td style="text-align: right;">${order.distanciaDoInicio.toLocaleString()} pts</td>
                     <td style="text-align: right;">${order.distanciaPercorrida.toLocaleString()} pts</td>
-                    <td style="text-align: right; color: #ffd700;">R$ ${order.custoIndividual.toFixed(4)}</td>
-                    <td style="text-align: right;">R$ ${order.custoAcumulado.toFixed(4)}</td>
+                    <td style="text-align: right; color: #ffd700;">R$ ${order.custoIndividual.toFixed(2)}</td>
+                    <td style="text-align: right;">R$ ${order.custoAcumulado.toFixed(2)}</td>
                     <td style="text-align: center;">${percentage}%</td>
                 </tr>
             `;
@@ -893,9 +893,9 @@
             </div>
             <div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;">
                 <strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>
-                📌 Ordem mais distante (posição 0): <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(4)}</strong> | 
-                📌 Ordem mais próxima (posição ${totalDistance.toLocaleString()}): <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(4)}</strong><br>
-                📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(4)}</span>
+                📌 Ordem mais distante (posição 0): <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(2)}</strong> | 
+                📌 Ordem mais próxima (posição ${totalDistance.toLocaleString()}): <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</strong><br>
+                📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(2)}</span>
             </div>
             <div style="margin-top: 10px; padding: 10px; background: rgba(33,150,243,0.1); border-radius: 10px; text-align: center;">
                 <strong>📐 FÓRMULA UTILIZADA:</strong><br>
@@ -1298,7 +1298,7 @@
         `;
     }
 
-    // ==================== FUNÇÕES DO SISTEMA PRINCIPAL ====================
+    // ==================== FUNÇÕES DO SISTEMA PRINCIPAL (MANTIDAS) ====================
     function loadAllAccounts() {
         const stored = localStorage.getItem('imperiofxjf_all_accounts_v13');
         if (stored) {
@@ -1923,4 +1923,4 @@
     loadAllAccounts();
 </script>
 </body>
-</html>
+                </html>

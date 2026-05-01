@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Império FX JF - Sistema Profissional</title>
+    <title>Império FX JF - Gestão Financeira do Trader</title>
     <style>
         * {
             margin: 0;
@@ -42,6 +42,127 @@
             color: transparent;
             margin-bottom: 10px;
         }
+        .header h1 small {
+            font-size: 0.5em;
+            display: block;
+            color: #ffd700;
+            background: none;
+            -webkit-background-clip: unset;
+            background-clip: unset;
+            margin-top: 5px;
+        }
+        .header p {
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        /* BARRA DE MENUS PROFISSIONAL */
+        .menu-bar {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .menu-group {
+            display: flex;
+            gap: 8px;
+            padding: 0 10px;
+            border-right: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .menu-group:last-child {
+            border-right: none;
+        }
+        
+        .menu-btn {
+            padding: 10px 12px;
+            font-size: 0.85em;
+            margin: 0;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .menu-btn i, .menu-btn span {
+            font-size: 1.1em;
+        }
+        
+        .btn-theme {
+            background: linear-gradient(135deg, #6c63ff, #3f3a91);
+            color: white;
+        }
+        
+        .btn-excel {
+            background: linear-gradient(135deg, #1e8449, #145a32);
+            color: white;
+        }
+        
+        .btn-pdf {
+            background: linear-gradient(135deg, #cb4335, #922b21);
+            color: white;
+        }
+        
+        .btn-word {
+            background: linear-gradient(135deg, #2471a3, #1a5276);
+            color: white;
+        }
+        
+        .btn-backup {
+            background: linear-gradient(135deg, #17a589, #117864);
+            color: white;
+        }
+        
+        .btn-import {
+            background: linear-gradient(135deg, #e67e22, #ca6f1e);
+            color: white;
+        }
+        
+        .btn-reset {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        
+        .menu-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+        
+        @media (max-width: 768px) {
+            .menu-bar {
+                flex-direction: column;
+                align-items: center;
+            }
+            .menu-group {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+                padding: 10px;
+                width: 100%;
+                justify-content: center;
+            }
+            .menu-group:last-child {
+                border-bottom: none;
+            }
+            .menu-btn {
+                padding: 8px 12px;
+                font-size: 0.8em;
+            }
+            .header h1 {
+                font-size: 1.8em;
+            }
+            .header h1 small {
+                font-size: 0.45em;
+            }
+        }
+        
         .card {
             background: rgba(30, 35, 58, 0.9);
             backdrop-filter: blur(10px);
@@ -138,14 +259,9 @@
         .btn-account {
             background: linear-gradient(135deg, #9c27b0, #7b1fa2);
         }
-        .btn-backup {
-            background: linear-gradient(135deg, #00bcd4, #0097a7);
-        }
-        .btn-word {
-            background: linear-gradient(135deg, #1e88e5, #1565c0);
-        }
-        .btn-compound {
-            background: linear-gradient(135deg, #8bc34a, #7cb342);
+        .btn-calc {
+            background: linear-gradient(135deg, #00acc1, #00838f);
+            color: white;
         }
         .table-responsive {
             overflow-x: auto;
@@ -217,14 +333,14 @@
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
-        .hedge-calc-result {
+        .hedge-calc-result, .grid-calc-result {
             background: rgba(0,0,0,0.5);
             padding: 20px;
             border-radius: 15px;
             margin-top: 15px;
             text-align: center;
         }
-        .hedge-lotes-destaque {
+        .hedge-lotes-destaque, .grid-lotes-destaque {
             font-size: 2em;
             font-weight: bold;
             color: #ffd700;
@@ -244,13 +360,6 @@
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 10px;
-        }
-        .config-bar {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 15px;
-            flex-wrap: wrap;
         }
         .separator-inputs {
             display: flex;
@@ -308,12 +417,18 @@
         #fileInput {
             display: none;
         }
+        .grid-info-table {
+            width: 100%;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+        .grid-info-table td {
+            padding: 8px;
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+        }
         @media (max-width: 768px) {
             .grid-2, .grid-3 {
                 grid-template-columns: 1fr;
-            }
-            .header h1 {
-                font-size: 1.8em;
             }
             .separator-inputs-4 {
                 grid-template-columns: 1fr;
@@ -330,16 +445,46 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>🏛️ IMPÉRIO FX JF</h1>
+        <h1>
+            🏛️ IMPÉRIO FX JF<br>
+            <small>Gestão Financeira do Trader</small>
+        </h1>
         <p>Múltiplas Contas | Lucro/Perda Separados | Saque/Aporte | % Apenas Operacional</p>
-        <div class="config-bar">
-            <button onclick="toggleTheme()">🌙 Modo Noturno</button>
-            <button onclick="exportToExcel()" class="btn-success">📊 Exportar Excel</button>
-            <button onclick="generatePDF()" class="btn-info">📄 Exportar PDF</button>
-            <button onclick="exportToWord()" class="btn-word">📝 Exportar Word</button>
-            <button onclick="exportBackup()" class="btn-backup">📤 Backup Completo</button>
-            <button onclick="document.getElementById('fileInput').click()" class="btn-backup">📥 Importar Backup</button>
-            <button onclick="openResetModal()" class="btn-warning">🔄 Resetar Conta</button>
+        
+        <!-- BARRA DE MENUS PROFISSIONAL -->
+        <div class="menu-bar">
+            <div class="menu-group">
+                <button onclick="toggleTheme()" class="menu-btn btn-theme" title="Alternar tema">
+                    <span>🌓</span> <span>Modo</span>
+                </button>
+            </div>
+            
+            <div class="menu-group">
+                <button onclick="exportToExcel()" class="menu-btn btn-excel" title="Exportar para Excel">
+                    <span>📊</span> <span>Excel</span>
+                </button>
+                <button onclick="generatePDF()" class="menu-btn btn-pdf" title="Exportar para PDF">
+                    <span>📄</span> <span>PDF</span>
+                </button>
+                <button onclick="exportToWord()" class="menu-btn btn-word" title="Exportar para Word">
+                    <span>📝</span> <span>Word</span>
+                </button>
+            </div>
+            
+            <div class="menu-group">
+                <button onclick="exportBackup()" class="menu-btn btn-backup" title="Fazer backup completo">
+                    <span>💾</span> <span>Backup</span>
+                </button>
+                <button onclick="document.getElementById('fileInput').click()" class="menu-btn btn-import" title="Importar backup">
+                    <span>📥</span> <span>Importar</span>
+                </button>
+            </div>
+            
+            <div class="menu-group">
+                <button onclick="openResetModal()" class="menu-btn btn-reset" title="Resetar conta atual">
+                    <span>🔄</span> <span>Resetar</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -460,6 +605,40 @@
         </div>
     </div>
 
+    <!-- CALCULADORA DE DISTANCIAMENTO DE ORDENS (GRID PROGRESSIVO) -->
+    <div class="card">
+        <div class="card-title">📏 CALCULADORA DE DISTANCIAMENTO DE ORDENS (GRID PROGRESSIVO)</div>
+        <div class="grid-2">
+            <div>
+                <div class="form-group">
+                    <label>🎯 Lote por Ordem</label>
+                    <input type="number" id="gridLotSize" step="0.01" value="0.01" placeholder="Ex: 0.01">
+                    <small>Quantidade de lotes por ordem</small>
+                </div>
+                <div class="form-group">
+                    <label>📏 Distanciamento entre Ordens (pontos)</label>
+                    <input type="number" id="gridDistance" step="100" value="10000" placeholder="Ex: 10000">
+                    <small>Espaçamento em pontos entre cada ordem</small>
+                </div>
+                <div class="form-group">
+                    <label>💰 Valor por Ponto (R$)</label>
+                    <input type="number" id="gridPointValue" step="0.00001" value="0.001" placeholder="Ex: 0.001">
+                    <small>Quanto cada ponto vale em R$ (ex: 0.001 = 0,1 centavo)</small>
+                </div>
+                <div class="form-group">
+                    <label>🎯 Distância Total (pontos)</label>
+                    <input type="number" id="gridTotalDistance" step="1000" value="50000" placeholder="Ex: 50000">
+                    <small>Até quantos pontos quer chegar</small>
+                </div>
+                <button onclick="calculateGridDistance()" class="btn-calc">🔢 CALCULAR GRID PROGRESSIVO</button>
+            </div>
+            <div id="gridResult" class="grid-calc-result">
+                <strong>📊 RESULTADO DO GRID PROGRESSIVO:</strong><br><br>
+                <span style="color: #aaa;">Preencha os campos acima e clique em Calcular</span>
+            </div>
+        </div>
+    </div>
+
     <!-- Porcentagens Detalhadas -->
     <div class="grid-3" id="percentageCards"></div>
 
@@ -571,7 +750,7 @@
     let monthlyChart = null;
     let assetsChart = null;
 
-    // FUNÇÃO UNIVERSAL DE DOWNLOAD CORRIGIDA
+    // FUNÇÃO UNIVERSAL DE DOWNLOAD
     function downloadFile(data, fileName, mimeType) {
         try {
             const blob = new Blob([data], { type: mimeType });
@@ -590,7 +769,149 @@
         }
     }
 
-    // ✅ EXPORTAR EXCEL CORRIGIDO
+    // ==================== CALCULADORA DE DISTANCIAMENTO PROGRESSIVO CORRIGIDA ====================
+    function calculateGridDistance() {
+        // Pegar os valores dos inputs
+        const lotSize = parseFloat(document.getElementById('gridLotSize').value);
+        const distancePoints = parseFloat(document.getElementById('gridDistance').value);
+        const pointValue = parseFloat(document.getElementById('gridPointValue').value);
+        const totalDistance = parseFloat(document.getElementById('gridTotalDistance').value);
+        
+        // Validações
+        if (isNaN(lotSize) || lotSize <= 0) {
+            alert('❌ Por favor, insira um valor válido para o LOTE!');
+            return;
+        }
+        if (isNaN(distancePoints) || distancePoints <= 0) {
+            alert('❌ Por favor, insira um valor válido para o DISTANCIAMENTO!');
+            return;
+        }
+        if (isNaN(pointValue) || pointValue <= 0) {
+            alert('❌ Por favor, insira um valor válido para o VALOR POR PONTO!');
+            return;
+        }
+        if (isNaN(totalDistance) || totalDistance <= 0) {
+            alert('❌ Por favor, insira um valor válido para a DISTÂNCIA TOTAL!');
+            return;
+        }
+        
+        // Calcular número total de ordens (incluindo a ordem 0 no ponto inicial)
+        const numberOfIntervals = Math.floor(totalDistance / distancePoints);
+        const numberOfOrders = numberOfIntervals + 1;
+        
+        // Criar array com os detalhes de cada ordem
+        let ordersDetails = [];
+        let totalCostAllOrders = 0;
+        
+        for (let i = 0; i < numberOfOrders; i++) {
+            const orderNumber = i;
+            // Distância que esta ordem percorre (em pontos)
+            const distanceThisOrder = Math.max(0, totalDistance - (i * distancePoints));
+            // Custo desta ordem (proporcional à distância percorrida)
+            const orderCost = lotSize * pointValue * distanceThisOrder;
+            
+            ordersDetails.push({
+                ordem: orderNumber,
+                distanciaDoInicio: i * distancePoints,
+                distanciaPercorrida: distanceThisOrder,
+                custoIndividual: orderCost
+            });
+            
+            totalCostAllOrders += orderCost;
+        }
+        
+        // Ordem reversa para exibir da mais próxima para a mais distante (mais intuitivo)
+        const ordersReversed = [...ordersDetails].reverse();
+        
+        // Calcular acumulado
+        let runningTotal = 0;
+        let ordersWithAccumulated = ordersReversed.map(order => {
+            runningTotal += order.custoIndividual;
+            return {
+                ...order,
+                custoAcumulado: runningTotal
+            };
+        });
+        
+        // Valor da ordem mais distante para referência
+        const maxOrderCost = ordersDetails[0].custoIndividual;
+        
+        // Exibir resultados
+        let resultHTML = `
+            <strong>📊 RESULTADO DO GRID PROGRESSIVO</strong><br><br>
+            <div class="grid-lotes-destaque">📈 ${numberOfOrders} ORDENS NO TOTAL</div>
+            <div>🔹 Ordem mais distante (posição 0): ${lotSize} lote(s)</div>
+            <div>🔹 Distanciamento: ${distancePoints.toLocaleString()} pontos entre ordens</div>
+            <div>🔹 Cobertura total: ${totalDistance.toLocaleString()} pontos</div>
+            <hr style="margin: 10px 0; border-color: #3a3f5e;">
+            <div><strong>💰 Valor por ponto:</strong> R$ ${pointValue.toFixed(6)} (${(pointValue * 1000).toFixed(3)} milésimos)</div>
+            <div><strong>💰 Custo da ordem mais distante (ordem 0):</strong> R$ ${maxOrderCost.toFixed(4)}</div>
+            <div><strong>📊 Custo da ordem mais próxima (ordem ${numberOfOrders-1}):</strong> R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(4)}</div>
+            <hr style="margin: 10px 0; border-color: #3a3f5e;">
+            <div><strong>💰 Custo TOTAL de TODAS as ${numberOfOrders} ordens:</strong> <span class="profit-positive" style="font-size: 1.3em;">R$ ${totalCostAllOrders.toFixed(4)}</span></div>
+            <div><strong>📊 Custo médio por ordem:</strong> R$ ${(totalCostAllOrders / numberOfOrders).toFixed(4)}</div>
+        `;
+        
+        // Adicionar tabela detalhada (da ordem mais próxima para a mais distante)
+        resultHTML += `
+            <hr style="margin: 15px 0; border-color: #3a3f5e;">
+            <div style="text-align: left;">
+                <strong>📋 DETALHAMENTO ORDEM POR ORDEM (da mais próxima à mais distante):</strong>
+            </div>
+            <div style="text-align: left; max-height: 350px; overflow-y: auto; margin-top: 10px;">
+                <table class="grid-info-table" style="width: 100%; font-size: 0.85em;">
+                    <thead>
+                        <tr style="background: rgba(255,215,0,0.2);">
+                            <th># Ordem</th>
+                            <th>Distância do Início</th>
+                            <th>Distância Percorrida</th>
+                            <th>Custo Individual</th>
+                            <th>Custo Acumulado</th>
+                            <th>% do Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        ordersWithAccumulated.forEach((order, idx) => {
+            const percentage = (order.custoIndividual / totalCostAllOrders * 100).toFixed(1);
+            resultHTML += `
+                <tr>
+                    <td style="text-align: center;"><strong>${order.ordem}</strong></td>
+                    <td style="text-align: right;">${order.distanciaDoInicio.toLocaleString()} pts</td>
+                    <td style="text-align: right;">${order.distanciaPercorrida.toLocaleString()} pts</td>
+                    <td style="text-align: right; color: #ffd700;">R$ ${order.custoIndividual.toFixed(4)}</td>
+                    <td style="text-align: right;">R$ ${order.custoAcumulado.toFixed(4)}</td>
+                    <td style="text-align: center;">${percentage}%</td>
+                </tr>
+            `;
+        });
+        
+        resultHTML += `
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;">
+                <strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>
+                📌 Ordem mais distante (posição 0): <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(4)}</strong> | 
+                📌 Ordem mais próxima (posição ${totalDistance.toLocaleString()}): <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(4)}</strong><br>
+                📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(4)}</span>
+            </div>
+            <div style="margin-top: 10px; padding: 10px; background: rgba(33,150,243,0.1); border-radius: 10px; text-align: center;">
+                <strong>📐 FÓRMULA UTILIZADA:</strong><br>
+                Custo da ordem = Lote × Valor por Ponto × Distância Percorrida pela Ordem<br>
+                Onde: Distância Percorrida = Distância Total - (Posição da Ordem × Distanciamento)
+            </div>
+            <div style="margin-top: 10px; font-size: 0.85em; color: #aaa;">
+                ℹ️ Ordem 0 = Posição inicial (percorre TODA a distância, maior custo)<br>
+                ℹ️ A cada ${distancePoints.toLocaleString()} pontos, a próxima ordem percorre menos distância, portanto custa menos
+            </div>
+        `;
+        
+        document.getElementById('gridResult').innerHTML = resultHTML;
+    }
+
+    // EXPORTAR EXCEL
     function exportToExcel() {
         if (!trades.length) {
             alert('❌ Sem dados para exportar!');
@@ -634,7 +955,7 @@
         }
     }
 
-    // ✅ EXPORTAR PDF CORRIGIDO
+    // EXPORTAR PDF
     function generatePDF() {
         if (!trades.length) {
             alert('❌ Sem dados para exportar!');
@@ -672,7 +993,7 @@
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>Relatório Império FX JF</title>
+                    <title>Império FX JF - Gestão Financeira do Trader</title>
                     <style>
                         body { font-family: Arial, sans-serif; margin: 20px; }
                         h1 { color: #ffd700; text-align: center; }
@@ -687,7 +1008,7 @@
                 <body>
                     <div class="header">
                         <h1>🏛️ IMPÉRIO FX JF</h1>
-                        <h2>RELATÓRIO PROFISSIONAL</h2>
+                        <h2>Gestão Financeira do Trader</h2>
                         <p><strong>Conta:</strong> ${currentAccount}</p>
                         <p><strong>Data de Geração:</strong> ${new Date().toLocaleString()}</p>
                     </div>
@@ -708,16 +1029,14 @@
                     <h3>📋 DETALHAMENTO DAS OPERAÇÕES</h3>
                     <table>
                         <thead>
-                            <tr>
-                                <th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>%</th><th>Ativo</th>
-                            </tr>
+                            <tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>%</th><th>Ativo</th></tr>
                         </thead>
                         <tbody>${rows}</tbody>
                     </table>
                     
                     <div class="footer">
-                        <p>IMPÉRIO FX JF — Sistema Profissional de Gerenciamento Trader</p>
-                        <p>www.imperiofxjf.com</p>
+                        <p>IMPÉRIO FX JF - Gestão Financeira do Trader</p>
+                        <p>Sistema Profissional de Gerenciamento</p>
                     </div>
                 </body>
                 </html>
@@ -739,7 +1058,7 @@
         }
     }
 
-    // ✅ EXPORTAR WORD NOVA FUNÇÃO
+    // EXPORTAR WORD
     function exportToWord() {
         if (!trades.length) {
             alert('❌ Sem dados para exportar!');
@@ -777,7 +1096,7 @@
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>Relatório Império FX JF</title>
+                    <title>Império FX JF - Gestão Financeira do Trader</title>
                     <style>
                         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 30px; }
                         h1 { color: #ffd700; text-align: center; }
@@ -793,7 +1112,7 @@
                 <body>
                     <div class="header">
                         <h1>🏛️ IMPÉRIO FX JF</h1>
-                        <h2>RELATÓRIO DE OPERAÇÕES</h2>
+                        <h2>Gestão Financeira do Trader</h2>
                         <p><strong>Conta:</strong> ${currentAccount}</p>
                         <p><strong>Data:</strong> ${new Date().toLocaleString()}</p>
                     </div>
@@ -817,7 +1136,8 @@
                     </table>
                     
                     <div class="footer">
-                        <p>IMPÉRIO FX JF — Sistema Profissional de Gerenciamento Trader</p>
+                        <p>IMPÉRIO FX JF - Gestão Financeira do Trader</p>
+                        <p>Sistema Profissional de Gerenciamento</p>
                     </div>
                 </body>
                 </html>
@@ -841,7 +1161,7 @@
         }
     }
 
-    // ✅ BACKUP COMPLETO CORRIGIDO
+    // BACKUP COMPLETO
     function exportBackup() {
         try {
             const backupData = {
@@ -869,7 +1189,7 @@
         }
     }
 
-    // ✅ IMPORTAR BACKUP CORRIGIDO
+    // IMPORTAR BACKUP
     function importBackup(input) {
         const file = input.files[0];
         if (!file) {
@@ -978,7 +1298,7 @@
         `;
     }
 
-    // Carregar todas as contas do localStorage
+    // ==================== FUNÇÕES DO SISTEMA PRINCIPAL ====================
     function loadAllAccounts() {
         const stored = localStorage.getItem('imperiofxjf_all_accounts_v13');
         if (stored) {
@@ -1446,7 +1766,7 @@
     function updateTradesTable() {
         const tbody = document.getElementById('tradesBody');
         if (trades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="12">Nenhum registro ainda</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="12">Nenhum registro ainda<\/td><\/tr>';
             return;
         }
         const sorted = [...trades].sort((a, b) => {
@@ -1458,7 +1778,7 @@
             const resultClass = (trade.operationalResult || 0) >= 0 ? 'profit-positive' : 'profit-negative';
             const row = tbody.insertRow();
             row.innerHTML = `
-                <tr>${trade.date}</td>
+                <td>${trade.date}</td>
                 <td>R$ ${trade.initialBalance.toFixed(2)}</td>
                 <td class="profit-positive">R$ ${(trade.profit || 0).toFixed(2)}</td>
                 <td class="profit-negative">R$ ${(trade.loss || 0).toFixed(2)}</td>
@@ -1590,11 +1910,13 @@
         updateChart();
     }
 
+    // Event listeners
     ['profitToRealize', 'lotsProfit', 'totalLoss', 'lotsLoss'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('input', calculateHedgeAbater);
     });
 
+    // Inicialização
     if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
     setupLotsValidation();
     setDefaultDate();

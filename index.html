@@ -116,6 +116,11 @@
             color: white;
         }
         
+        .btn-print {
+            background: linear-gradient(135deg, #6c3483, #4a235a);
+            color: white;
+        }
+        
         .btn-backup {
             background: linear-gradient(135deg, #17a589, #117864);
             color: white;
@@ -261,6 +266,10 @@
         }
         .btn-calc {
             background: linear-gradient(135deg, #00acc1, #00838f);
+            color: white;
+        }
+        .btn-print-report {
+            background: linear-gradient(135deg, #6c3483, #4a235a);
             color: white;
         }
         .table-responsive {
@@ -426,6 +435,81 @@
             padding: 8px;
             border-bottom: 1px solid rgba(255,215,0,0.2);
         }
+        
+        /* Modal de impressão */
+        .print-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .print-modal-content {
+            background: #1a1f3a;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90%;
+            overflow: auto;
+            position: relative;
+            padding: 20px;
+        }
+        .print-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ffd700;
+        }
+        .print-modal-header h2 {
+            color: #ffd700;
+            margin: 0;
+        }
+        .close-print-modal {
+            background: #ff4444;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 15px;
+            border-radius: 10px;
+        }
+        .close-print-modal:hover {
+            background: #cc0000;
+        }
+        .print-content {
+            color: #fff;
+        }
+        
+        /* Estilos para impressão */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-content, .print-content * {
+                visibility: visible;
+            }
+            .print-content {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                margin: 0;
+                padding: 20px;
+                background: white;
+                color: black;
+            }
+            .print-modal, .print-modal-header button {
+                display: none !important;
+            }
+        }
+        
         @media (max-width: 768px) {
             .grid-2, .grid-3 {
                 grid-template-columns: 1fr;
@@ -469,6 +553,9 @@
                 <button onclick="exportToWord()" class="menu-btn btn-word" title="Exportar para Word">
                     <span>📝</span> <span>Word</span>
                 </button>
+                <button onclick="showPrintModal()" class="menu-btn btn-print" title="Imprimir relatório completo">
+                    <span>🖨️</span> <span>Imprimir</span>
+                </button>
             </div>
             
             <div class="menu-group">
@@ -484,6 +571,21 @@
                 <button onclick="openResetModal()" class="menu-btn btn-reset" title="Resetar conta atual">
                     <span>🔄</span> <span>Resetar</span>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Impressão -->
+    <div id="printModal" class="print-modal">
+        <div class="print-modal-content">
+            <div class="print-modal-header">
+                <h2>🖨️ Relatório para Impressão</h2>
+                <button class="close-print-modal" onclick="closePrintModal()">✕ Fechar</button>
+            </div>
+            <div id="printContentContainer" class="print-content"></div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="executePrint()" class="btn-success">🖨️ Imprimir Agora</button>
+                <button onclick="closePrintModal()" class="btn-danger">❌ Cancelar</button>
             </div>
         </div>
     </div>
@@ -741,7 +843,490 @@
 </div>
 
 <script>
-    // ==================== SISTEMA DE MÚLTIPLAS CONTAS ====================
+    // ==================== SISTEMA DE ARMAZENAMENTO COM INDEXEDDB (SEM LIMITES) ====================
+    const DB_NAME = 'ImperioFXJF_DB';
+    const DB_VERSION = 2;
+    let db = null;
+    
+    function initDatabase() {
+        return new Promise((resolve, reject) => {
+            if (db && db.name === DB_NAME) {
+                resolve(db);
+                return;
+            }
+            
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            
+            request.onerror = function(event) {
+                console.error('Erro ao abrir banco de dados:', event.target.error);
+                reject('Erro ao abrir banco');
+            };
+            
+            request.onsuccess = function(event) {
+                db = event.target.result;
+                console.log('Banco de dados conectado com sucesso!');
+                resolve(db);
+            };
+            
+            request.onupgradeneeded = function(event) {
+                const database = event.target.result;
+                
+                if (!database.objectStoreNames.contains('accounts')) {
+                    const accountStore = database.createObjectStore('accounts', { keyPath: 'name' });
+                    accountStore.createIndex('name', 'name', { unique: true });
+                }
+                
+                if (!database.objectStoreNames.contains('settings')) {
+                    database.createObjectStore('settings', { keyPath: 'key' });
+                }
+                
+                console.log('Estrutura do banco criada/atualizada');
+            };
+        });
+    }
+    
+    async function loadAllAccountsFromDB() {
+        try {
+            await initDatabase();
+            
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['accounts'], 'readonly');
+                const store = transaction.objectStore('accounts');
+                const request = store.getAll();
+                
+                request.onsuccess = function() {
+                    const accountsList = request.result;
+                    if (accountsList && accountsList.length > 0) {
+                        const accountsObj = {};
+                        accountsList.forEach(account => {
+                            accountsObj[account.name] = {
+                                trades: account.trades || [],
+                                initialBalance: account.initialBalance
+                            };
+                        });
+                        resolve(accountsObj);
+                    } else {
+                        resolve(null);
+                    }
+                };
+                
+                request.onerror = function() {
+                    reject(request.error);
+                };
+            });
+        } catch (error) {
+            console.error('Erro ao carregar contas:', error);
+            return null;
+        }
+    }
+    
+    async function saveAllAccountsToDB(accountsObj) {
+        try {
+            await initDatabase();
+            
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['accounts'], 'readwrite');
+                const store = transaction.objectStore('accounts');
+                
+                const clearRequest = store.clear();
+                
+                clearRequest.onsuccess = function() {
+                    let completed = 0;
+                    const accountNames = Object.keys(accountsObj);
+                    
+                    if (accountNames.length === 0) {
+                        resolve();
+                        return;
+                    }
+                    
+                    accountNames.forEach(name => {
+                        const accountData = {
+                            name: name,
+                            trades: accountsObj[name].trades || [],
+                            initialBalance: accountsObj[name].initialBalance
+                        };
+                        const addRequest = store.add(accountData);
+                        
+                        addRequest.onsuccess = function() {
+                            completed++;
+                            if (completed === accountNames.length) {
+                                resolve();
+                            }
+                        };
+                        
+                        addRequest.onerror = function() {
+                            reject(addRequest.error);
+                        };
+                    });
+                };
+                
+                clearRequest.onerror = function() {
+                    reject(clearRequest.error);
+                };
+            });
+        } catch (error) {
+            console.error('Erro ao salvar contas:', error);
+            throw error;
+        }
+    }
+    
+    async function loadSettingsFromDB() {
+        try {
+            await initDatabase();
+            
+            return new Promise((resolve) => {
+                const transaction = db.transaction(['settings'], 'readonly');
+                const store = transaction.objectStore('settings');
+                const request = store.get('theme');
+                
+                request.onsuccess = function() {
+                    if (request.result) {
+                        resolve(request.result.value);
+                    } else {
+                        resolve(null);
+                    }
+                };
+                
+                request.onerror = function() {
+                    resolve(null);
+                };
+            });
+        } catch (error) {
+            return null;
+        }
+    }
+    
+    async function saveSettingsToDB(key, value) {
+        try {
+            await initDatabase();
+            
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['settings'], 'readwrite');
+                const store = transaction.objectStore('settings');
+                const request = store.put({ key: key, value: value });
+                
+                request.onsuccess = function() {
+                    resolve();
+                };
+                
+                request.onerror = function() {
+                    reject(request.error);
+                };
+            });
+        } catch (error) {
+            console.error('Erro ao salvar configuração:', error);
+        }
+    }
+    
+    // ==================== FUNÇÃO DE IMPRESSÃO COMPLETA COM MODAL ====================
+    let currentPrintHTML = '';
+    
+    function showPrintModal() {
+        if (!trades.length && systemInitialBalance === null) {
+            alert('❌ Não há dados para imprimir!');
+            return;
+        }
+        
+        // Gerar HTML do relatório
+        generatePrintHTML();
+        // Mostrar modal
+        document.getElementById('printModal').style.display = 'flex';
+    }
+    
+    function closePrintModal() {
+        document.getElementById('printModal').style.display = 'none';
+        document.getElementById('printContentContainer').innerHTML = '';
+    }
+    
+    function executePrint() {
+        const printContent = document.getElementById('printContentContainer').innerHTML;
+        const originalTitle = document.title;
+        document.title = `Relatorio_${currentAccount}_${new Date().toISOString().split('T')[0]}`;
+        
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Império FX JF - Relatório</title>
+                    <style>
+                        body {
+                            font-family: 'Segoe UI', Arial, sans-serif;
+                            margin: 20px;
+                            padding: 20px;
+                            color: #000;
+                        }
+                        .print-header {
+                            text-align: center;
+                            margin-bottom: 30px;
+                            padding: 20px;
+                            border-bottom: 3px solid #ffd700;
+                        }
+                        .print-header h1 {
+                            color: #ff8c00;
+                            margin: 0;
+                            font-size: 28px;
+                        }
+                        .print-header p {
+                            margin: 5px 0;
+                            color: #666;
+                        }
+                        .print-date {
+                            text-align: right;
+                            font-size: 12px;
+                            margin-bottom: 20px;
+                            color: #666;
+                        }
+                        .section {
+                            margin-bottom: 30px;
+                            page-break-inside: avoid;
+                        }
+                        .section-title {
+                            background: #ffd700;
+                            color: #000;
+                            padding: 10px;
+                            margin-bottom: 15px;
+                            font-size: 18px;
+                            font-weight: bold;
+                            border-radius: 5px;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 20px;
+                        }
+                        th, td {
+                            border: 1px solid #ddd;
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background: #f5f5f5;
+                            font-weight: bold;
+                        }
+                        .profit-positive {
+                            color: #2e7d32 !important;
+                            font-weight: bold;
+                        }
+                        .profit-negative {
+                            color: #c62828 !important;
+                            font-weight: bold;
+                        }
+                        .metrics-grid-print {
+                            display: grid;
+                            grid-template-columns: repeat(4, 1fr);
+                            gap: 10px;
+                            margin-bottom: 20px;
+                        }
+                        .metric-card-print {
+                            background: #f5f5f5;
+                            padding: 10px;
+                            border-radius: 5px;
+                            text-align: center;
+                            border: 1px solid #ddd;
+                        }
+                        .metric-card-print h4 {
+                            margin: 0 0 5px 0;
+                            font-size: 12px;
+                            color: #666;
+                        }
+                        .metric-card-print .value {
+                            font-size: 18px;
+                            font-weight: bold;
+                            color: #333;
+                        }
+                        .calc-result {
+                            background: #f9f9f9;
+                            padding: 15px;
+                            border-radius: 5px;
+                            margin-top: 10px;
+                            border: 1px solid #ddd;
+                        }
+                        .footer {
+                            text-align: center;
+                            margin-top: 30px;
+                            padding-top: 20px;
+                            border-top: 1px solid #ddd;
+                            font-size: 10px;
+                            color: #999;
+                        }
+                        @media print {
+                            body {
+                                margin: 0;
+                                padding: 10px;
+                            }
+                            button {
+                                display: none;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${printContent}
+                    <div class="footer">
+                        <p>IMPÉRIO FX JF - Gestão Financeira do Trader</p>
+                        <p>Relatório Gerado Automaticamente</p>
+                    </div>
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                            setTimeout(() => window.close(), 1000);
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        } else {
+            alert('⚠️ Por favor, permita popups para esta página. Use o atalho Ctrl+P ou Cmd+P para imprimir.');
+            window.print();
+        }
+        
+        document.title = originalTitle;
+    }
+    
+    function generatePrintHTML() {
+        // Coletar dados atuais das calculadoras
+        const profitToRealize = document.getElementById('profitToRealize').value || '0';
+        const lotsProfit = document.getElementById('lotsProfit').value || '0';
+        const totalLossVal = document.getElementById('totalLoss').value || '0';
+        const lotsLoss = document.getElementById('lotsLoss').value || '0';
+        
+        const gridLotSize = document.getElementById('gridLotSize').value || '0';
+        const gridDistance = document.getElementById('gridDistance').value || '0';
+        const gridPointValue = document.getElementById('gridPointValue').value || '0';
+        const gridTotalDistance = document.getElementById('gridTotalDistance').value || '0';
+        
+        const initialValue = document.getElementById('initialValue').value || '0';
+        const monthlyContribution = document.getElementById('monthlyContribution').value || '0';
+        const interestRate = document.getElementById('interestRate').value || '0';
+        const timeMonths = document.getElementById('timeMonths').value || '0';
+        
+        const hedgeResultHTML = document.getElementById('hedgeResult').innerHTML;
+        const gridResultHTML = document.getElementById('gridResult').innerHTML;
+        const compoundResultHTML = document.getElementById('compoundResult').innerHTML;
+        
+        // Calcular métricas
+        const totalProfit = trades.reduce((sum, t) => sum + (t.profit || 0), 0);
+        const totalLossCalc = trades.reduce((sum, t) => sum + (t.loss || 0), 0);
+        const totalWithdraw = trades.reduce((sum, t) => sum + (t.withdraw || 0), 0);
+        const totalDeposit = trades.reduce((sum, t) => sum + (t.deposit || 0), 0);
+        const totalOperational = totalProfit - totalLossCalc;
+        const finalBalance = trades.length > 0 ? trades[trades.length - 1].finalDayBalance : (systemInitialBalance || 0);
+        const totalPercent = systemInitialBalance ? ((totalOperational / systemInitialBalance) * 100).toFixed(2) : 0;
+        
+        // Montar tabela de trades
+        let tradesRows = '';
+        trades.forEach(trade => {
+            const resultClass = (trade.operationalResult || 0) >= 0 ? 'profit-positive' : 'profit-negative';
+            tradesRows += `
+                <tr>
+                    <td>${trade.date}</td>
+                    <td class="profit-positive">R$ ${(trade.profit || 0).toFixed(2)}</td>
+                    <td class="profit-negative">R$ ${(trade.loss || 0).toFixed(2)}</td>
+                    <td class="profit-negative">R$ ${(trade.withdraw || 0).toFixed(2)}</td>
+                    <td class="profit-positive">R$ ${(trade.deposit || 0).toFixed(2)}</td>
+                    <td class="${resultClass}">${(trade.operationalResult || 0) >= 0 ? '+' : ''}R$ ${(trade.operationalResult || 0).toFixed(2)}</td>
+                    <td class="${resultClass}">${(trade.dailyPercentage || 0) >= 0 ? '+' : ''}${(trade.dailyPercentage || 0).toFixed(2)}%</td>
+                    <td>${trade.lots || 0}</td>
+                    <td>${trade.asset || '-'}</td>
+                </tr>
+            `;
+        });
+        
+        const html = `
+            <div class="print-header">
+                <h1>🏛️ IMPÉRIO FX JF</h1>
+                <p>Gestão Financeira do Trader</p>
+                <p><strong>Conta:</strong> ${currentAccount || 'N/A'}</p>
+            </div>
+            <div class="print-date">
+                📅 Data do relatório: ${new Date().toLocaleString()}
+            </div>
+            
+            <!-- RESULTADOS DAS CALCULADORAS -->
+            <div class="section">
+                <div class="section-title">🧮 RESULTADOS DAS CALCULADORAS</div>
+                
+                <h3>📊 Calculadora Hedge</h3>
+                <div class="calc-result">
+                    <p><strong>Parâmetros utilizados:</strong></p>
+                    <p>💰 Lucro a realizar: R$ ${profitToRealize}</p>
+                    <p>🎯 Lotes do lucro: ${lotsProfit}</p>
+                    <p>📉 Prejuízo total: R$ ${totalLossVal}</p>
+                    <p>🎯 Lotes da perda: ${lotsLoss}</p>
+                    <hr>
+                    <div>${hedgeResultHTML}</div>
+                </div>
+                
+                <h3 style="margin-top: 20px;">📏 Calculadora Grid Progressivo</h3>
+                <div class="calc-result">
+                    <p><strong>Parâmetros utilizados:</strong></p>
+                    <p>🎯 Lote por ordem: ${gridLotSize}</p>
+                    <p>📏 Distanciamento: ${gridDistance} pontos</p>
+                    <p>💰 Valor por ponto: R$ ${gridPointValue}</p>
+                    <p>🎯 Distância total: ${gridTotalDistance} pontos</p>
+                    <hr>
+                    <div>${gridResultHTML}</div>
+                </div>
+                
+                <h3 style="margin-top: 20px;">📈 Calculadora Juros Compostos</h3>
+                <div class="calc-result">
+                    <p><strong>Parâmetros utilizados:</strong></p>
+                    <p>💰 Valor inicial: R$ ${initialValue}</p>
+                    <p>➕ Aporte mensal: R$ ${monthlyContribution}</p>
+                    <p>📊 Taxa de juros: ${interestRate}% ao mês</p>
+                    <p>⏱️ Período: ${timeMonths} meses</p>
+                    <hr>
+                    <div>${compoundResultHTML}</div>
+                </div>
+            </div>
+            
+            <!-- MÉTRICAS PRINCIPAIS -->
+            <div class="section">
+                <div class="section-title">📊 MÉTRICAS PRINCIPAIS</div>
+                <div class="metrics-grid-print">
+                    <div class="metric-card-print"><h4>💰 Saldo Inicial</h4><div class="value">R$ ${(systemInitialBalance || 0).toFixed(2)}</div></div>
+                    <div class="metric-card-print"><h4>📈 Lucro Total</h4><div class="value profit-positive">R$ ${totalProfit.toFixed(2)}</div></div>
+                    <div class="metric-card-print"><h4>📉 Perda Total</h4><div class="value profit-negative">R$ ${totalLossCalc.toFixed(2)}</div></div>
+                    <div class="metric-card-print"><h4>📊 Resultado</h4><div class="value ${totalOperational >= 0 ? 'profit-positive' : 'profit-negative'}">${totalOperational >= 0 ? '+' : ''}R$ ${totalOperational.toFixed(2)}</div></div>
+                    <div class="metric-card-print"><h4>📈 Rentabilidade</h4><div class="value ${totalPercent >= 0 ? 'profit-positive' : 'profit-negative'}">${totalPercent >= 0 ? '+' : ''}${totalPercent}%</div></div>
+                    <div class="metric-card-print"><h4>🏧 Total Saques</h4><div class="value">R$ ${totalWithdraw.toFixed(2)}</div></div>
+                    <div class="metric-card-print"><h4>💰 Total Aportes</h4><div class="value">R$ ${totalDeposit.toFixed(2)}</div></div>
+                    <div class="metric-card-print"><h4>🏁 Saldo Final</h4><div class="value">R$ ${finalBalance.toFixed(2)}</div></div>
+                </div>
+            </div>
+            
+            <!-- HISTÓRICO DE OPERAÇÕES -->
+            <div class="section">
+                <div class="section-title">📋 HISTÓRICO COMPLETO DE OPERAÇÕES</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Lucro (R$)</th>
+                            <th>Perda (R$)</th>
+                            <th>Saque (R$)</th>
+                            <th>Aporte (R$)</th>
+                            <th>Resultado (R$)</th>
+                            <th>%</th>
+                            <th>Lotes</th>
+                            <th>Ativo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tradesRows || '<tr><td colspan="9">Nenhum registro encontrado</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        document.getElementById('printContentContainer').innerHTML = html;
+    }
+    
+    // ==================== FUNÇÕES DO SISTEMA (MANTIDAS) ====================
     let accounts = {};
     let currentAccount = null;
     let trades = [];
@@ -749,8 +1334,7 @@
     let dailyChart = null;
     let monthlyChart = null;
     let assetsChart = null;
-
-    // FUNÇÃO UNIVERSAL DE DOWNLOAD
+    
     function downloadFile(data, fileName, mimeType) {
         try {
             const blob = new Blob([data], { type: mimeType });
@@ -768,413 +1352,71 @@
             return false;
         }
     }
-
-    // ==================== CALCULADORA DE DISTANCIAMENTO PROGRESSIVO CORRIGIDA (FORMATAÇÃO 2 casas decimais) ====================
-    function calculateGridDistance() {
-        // Pegar os valores dos inputs
-        const lotSize = parseFloat(document.getElementById('gridLotSize').value);
-        const distancePoints = parseFloat(document.getElementById('gridDistance').value);
-        const pointValue = parseFloat(document.getElementById('gridPointValue').value);
-        const totalDistance = parseFloat(document.getElementById('gridTotalDistance').value);
-        
-        // Validações
-        if (isNaN(lotSize) || lotSize <= 0) {
-            alert('❌ Por favor, insira um valor válido para o LOTE!');
-            return;
-        }
-        if (isNaN(distancePoints) || distancePoints <= 0) {
-            alert('❌ Por favor, insira um valor válido para o DISTANCIAMENTO!');
-            return;
-        }
-        if (isNaN(pointValue) || pointValue <= 0) {
-            alert('❌ Por favor, insira um valor válido para o VALOR POR PONTO!');
-            return;
-        }
-        if (isNaN(totalDistance) || totalDistance <= 0) {
-            alert('❌ Por favor, insira um valor válido para a DISTÂNCIA TOTAL!');
-            return;
-        }
-        
-        // Calcular número total de ordens (incluindo a ordem 0 no ponto inicial)
-        const numberOfIntervals = Math.floor(totalDistance / distancePoints);
-        const numberOfOrders = numberOfIntervals + 1;
-        
-        // Criar array com os detalhes de cada ordem
-        let ordersDetails = [];
-        let totalCostAllOrders = 0;
-        
-        for (let i = 0; i < numberOfOrders; i++) {
-            const orderNumber = i;
-            // Distância que esta ordem percorre (em pontos)
-            const distanceThisOrder = Math.max(0, totalDistance - (i * distancePoints));
-            // Custo desta ordem (proporcional à distância percorrida)
-            const orderCost = lotSize * pointValue * distanceThisOrder;
-            
-            ordersDetails.push({
-                ordem: orderNumber,
-                distanciaDoInicio: i * distancePoints,
-                distanciaPercorrida: distanceThisOrder,
-                custoIndividual: orderCost
-            });
-            
-            totalCostAllOrders += orderCost;
-        }
-        
-        // Ordem reversa para exibir da mais próxima para a mais distante (mais intuitivo)
-        const ordersReversed = [...ordersDetails].reverse();
-        
-        // Calcular acumulado
-        let runningTotal = 0;
-        let ordersWithAccumulated = ordersReversed.map(order => {
-            runningTotal += order.custoIndividual;
-            return {
-                ...order,
-                custoAcumulado: runningTotal
-            };
-        });
-        
-        // Valor da ordem mais distante para referência
-        const maxOrderCost = ordersDetails[0].custoIndividual;
-        
-        // Exibir resultados com formatação de 2 casas decimais
-        let resultHTML = `
-            <strong>📊 RESULTADO DO GRID PROGRESSIVO</strong><br><br>
-            <div class="grid-lotes-destaque">📈 ${numberOfOrders} ORDENS NO TOTAL</div>
-            <div>🔹 Ordem mais distante (posição 0): ${lotSize} lote(s)</div>
-            <div>🔹 Distanciamento: ${distancePoints.toLocaleString()} pontos entre ordens</div>
-            <div>🔹 Cobertura total: ${totalDistance.toLocaleString()} pontos</div>
-            <hr style="margin: 10px 0; border-color: #3a3f5e;">
-            <div><strong>💰 Valor por ponto:</strong> R$ ${pointValue.toFixed(6)} (${(pointValue * 1000).toFixed(3)} milésimos)</div>
-            <div><strong>💰 Custo da ordem mais distante (ordem 0):</strong> R$ ${maxOrderCost.toFixed(2)}</div>
-            <div><strong>📊 Custo da ordem mais próxima (ordem ${numberOfOrders-1}):</strong> R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</div>
-            <hr style="margin: 10px 0; border-color: #3a3f5e;">
-            <div><strong>💰 Custo TOTAL de TODAS as ${numberOfOrders} ordens:</strong> <span class="profit-positive" style="font-size: 1.3em;">R$ ${totalCostAllOrders.toFixed(2)}</span></div>
-            <div><strong>📊 Custo médio por ordem:</strong> R$ ${(totalCostAllOrders / numberOfOrders).toFixed(2)}</div>
-        `;
-        
-        // Adicionar tabela detalhada (da ordem mais próxima para a mais distante)
-        resultHTML += `
-            <hr style="margin: 15px 0; border-color: #3a3f5e;">
-            <div style="text-align: left;">
-                <strong>📋 DETALHAMENTO ORDEM POR ORDEM (da mais próxima à mais distante):</strong>
-            </div>
-            <div style="text-align: left; max-height: 350px; overflow-y: auto; margin-top: 10px;">
-                <table class="grid-info-table" style="width: 100%; font-size: 0.85em;">
-                    <thead>
-                        <tr style="background: rgba(255,215,0,0.2);">
-                            <th># Ordem</th>
-                            <th>Distância do Início</th>
-                            <th>Distância Percorrida</th>
-                            <th>Custo Individual</th>
-                            <th>Custo Acumulado</th>
-                            <th>% do Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        
-        ordersWithAccumulated.forEach((order, idx) => {
-            const percentage = (order.custoIndividual / totalCostAllOrders * 100).toFixed(1);
-            resultHTML += `
-                <tr>
-                    <td style="text-align: center;"><strong>${order.ordem}</strong></td>
-                    <td style="text-align: right;">${order.distanciaDoInicio.toLocaleString()} pts</td>
-                    <td style="text-align: right;">${order.distanciaPercorrida.toLocaleString()} pts</td>
-                    <td style="text-align: right; color: #ffd700;">R$ ${order.custoIndividual.toFixed(2)}</td>
-                    <td style="text-align: right;">R$ ${order.custoAcumulado.toFixed(2)}</td>
-                    <td style="text-align: center;">${percentage}%</td>
-                </tr>
-            `;
-        });
-        
-        resultHTML += `
-                    </tbody>
-                </table>
-            </div>
-            <div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;">
-                <strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>
-                📌 Ordem mais distante (posição 0): <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(2)}</strong> | 
-                📌 Ordem mais próxima (posição ${totalDistance.toLocaleString()}): <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</strong><br>
-                📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(2)}</span>
-            </div>
-            <div style="margin-top: 10px; padding: 10px; background: rgba(33,150,243,0.1); border-radius: 10px; text-align: center;">
-                <strong>📐 FÓRMULA UTILIZADA:</strong><br>
-                Custo da ordem = Lote × Valor por Ponto × Distância Percorrida pela Ordem<br>
-                Onde: Distância Percorrida = Distância Total - (Posição da Ordem × Distanciamento)
-            </div>
-            <div style="margin-top: 10px; font-size: 0.85em; color: #aaa;">
-                ℹ️ Ordem 0 = Posição inicial (percorre TODA a distância, maior custo)<br>
-                ℹ️ A cada ${distancePoints.toLocaleString()} pontos, a próxima ordem percorre menos distância, portanto custa menos
-            </div>
-        `;
-        
-        document.getElementById('gridResult').innerHTML = resultHTML;
-    }
-
-    // EXPORTAR EXCEL
-    function exportToExcel() {
-        if (!trades.length) {
-            alert('❌ Sem dados para exportar!');
-            return;
-        }
-
+    
+    async function loadAllAccounts() {
         try {
-            const data = trades.map(t => ({
-                '📅 Data': t.date,
-                '💰 Saldo Antes': `R$ ${(t.initialBalance || 0).toFixed(2)}`,
-                '📈 Lucro': `R$ ${(t.profit || 0).toFixed(2)}`,
-                '📉 Perda': `R$ ${(t.loss || 0).toFixed(2)}`,
-                '🏧 Saque': `R$ ${(t.withdraw || 0).toFixed(2)}`,
-                '💵 Aporte': `R$ ${(t.deposit || 0).toFixed(2)}`,
-                '📊 Resultado Op.': `R$ ${(t.operationalResult || 0).toFixed(2)}`,
-                '📈 % Operacional': `${(t.dailyPercentage || 0).toFixed(2)}%`,
-                '🎯 Lotes': t.lots || 0,
-                '📊 Ativo': t.asset || '-',
-                '🏁 Saldo Final': `R$ ${(t.finalDayBalance || 0).toFixed(2)}`,
-                '📝 Observação': t.note || ''
-            }));
-
-            const worksheet = XLSX.utils.json_to_sheet(data);
-            worksheet['!cols'] = [
-                { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 12 },
-                { wch: 12 }, { wch: 12 }, { wch: 18 }, { wch: 14 },
-                { wch: 10 }, { wch: 15 }, { wch: 16 }, { wch: 30 }
-            ];
-
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, `Relatorio_${currentAccount}`);
-
-            const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-            const fileName = `ImperioFXJF_${currentAccount}_${new Date().toISOString().split('T')[0]}.xlsx`;
+            const stored = await loadAllAccountsFromDB();
+            if (stored && Object.keys(stored).length > 0) {
+                accounts = stored;
+            } else {
+                accounts = { 'Conta Principal': { trades: [], initialBalance: null } };
+                await saveAllAccountsToDB(accounts);
+            }
             
-            downloadFile(excelBuffer, fileName, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            alert('✅ Excel exportado com sucesso!');
+            updateAccountSelect();
+            
+            const savedTheme = await loadSettingsFromDB();
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+            } else if (savedTheme === 'dark') {
+                document.body.classList.remove('light-mode');
+            }
+            
+            const lastAccount = localStorage.getItem('imperiofxjf_last_account');
+            if (lastAccount && accounts[lastAccount]) {
+                loadAccountData(lastAccount);
+            } else {
+                loadAccountData(Object.keys(accounts)[0]);
+            }
         } catch (error) {
-            console.error('Erro Excel:', error);
-            alert('❌ Erro ao exportar Excel!');
+            console.error('Erro ao carregar dados:', error);
+            accounts = { 'Conta Principal': { trades: [], initialBalance: null } };
+            updateAccountSelect();
+            loadAccountData('Conta Principal');
         }
     }
-
-    // EXPORTAR PDF
-    function generatePDF() {
-        if (!trades.length) {
-            alert('❌ Sem dados para exportar!');
-            return;
-        }
-
+    
+    async function saveAllAccounts() {
         try {
-            const totalProfit = trades.reduce((sum, t) => sum + (t.profit || 0), 0);
-            const totalLoss = trades.reduce((sum, t) => sum + (t.loss || 0), 0);
-            const totalWithdraw = trades.reduce((sum, t) => sum + (t.withdraw || 0), 0);
-            const totalDeposit = trades.reduce((sum, t) => sum + (t.deposit || 0), 0);
-            const totalOperational = totalProfit - totalLoss;
-            const finalBalance = trades[trades.length - 1].finalDayBalance || systemInitialBalance;
-            const totalPercent = systemInitialBalance ? ((totalOperational / systemInitialBalance) * 100).toFixed(2) : '0.00';
-
-            let rows = '';
-            trades.forEach((t, i) => {
-                rows += `
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 8px; text-align: center;">${i + 1}</td>
-                        <td style="padding: 8px;">${t.date}</td>
-                        <td style="padding: 8px; text-align: right; color: #4caf50;">R$ ${(t.profit || 0).toFixed(2)}</td>
-                        <td style="padding: 8px; text-align: right; color: #ff5252;">R$ ${(t.loss || 0).toFixed(2)}</td>
-                        <td style="padding: 8px; text-align: right; color: #ff5252;">R$ ${(t.withdraw || 0).toFixed(2)}</td>
-                        <td style="padding: 8px; text-align: right; color: #4caf50;">R$ ${(t.deposit || 0).toFixed(2)}</td>
-                        <td style="padding: 8px; text-align: right; font-weight: bold;">R$ ${(t.operationalResult || 0).toFixed(2)}</td>
-                        <td style="padding: 8px; text-align: right;">${(t.dailyPercentage || 0).toFixed(2)}%</td>
-                        <td style="padding: 8px;">${t.asset || '-'}</td>
-                    </tr>
-                `;
-            });
-
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Império FX JF - Gestão Financeira do Trader</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        h1 { color: #ffd700; text-align: center; }
-                        .header { text-align: center; margin-bottom: 30px; }
-                        .summary { border: 2px solid #333; padding: 15px; margin-bottom: 25px; border-radius: 10px; }
-                        .summary h3 { margin-top: 0; color: #ffd700; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                        th { background: #ffd700; color: #000; padding: 10px; text-align: center; }
-                        .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>🏛️ IMPÉRIO FX JF</h1>
-                        <h2>Gestão Financeira do Trader</h2>
-                        <p><strong>Conta:</strong> ${currentAccount}</p>
-                        <p><strong>Data de Geração:</strong> ${new Date().toLocaleString()}</p>
-                    </div>
-                    
-                    <div class="summary">
-                        <h3>📊 RESUMO EXECUTIVO</h3>
-                        <p><strong>💰 Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p>
-                        <p><strong>📈 Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p>
-                        <p><strong>📉 Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p>
-                        <p><strong>📊 Resultado Operacional:</strong> R$ ${totalOperational.toFixed(2)}</p>
-                        <p><strong>📈 Rentabilidade Total:</strong> ${totalPercent}%</p>
-                        <p><strong>🏧 Total Saques:</strong> R$ ${totalWithdraw.toFixed(2)}</p>
-                        <p><strong>💵 Total Aportes:</strong> R$ ${totalDeposit.toFixed(2)}</p>
-                        <p><strong>🏁 Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p>
-                        <p><strong>📝 Total de Registros:</strong> ${trades.length}</p>
-                    </div>
-                    
-                    <h3>📋 DETALHAMENTO DAS OPERAÇÕES</h3>
-                    <table>
-                        <thead>
-                            <tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>%</th><th>Ativo</th></tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                    
-                    <div class="footer">
-                        <p>IMPÉRIO FX JF - Gestão Financeira do Trader</p>
-                        <p>Sistema Profissional de Gerenciamento</p>
-                    </div>
-                </body>
-                </html>
-            `;
-
-            const fileName = `ImperioFXJF_Relatorio_${currentAccount}_${new Date().toISOString().split('T')[0]}.pdf`;
-            
-            html2pdf().set({
-                margin: 10,
-                filename: fileName,
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            }).from(htmlContent).save();
-            
-            setTimeout(() => alert('✅ PDF gerado com sucesso!'), 1000);
+            await saveAllAccountsToDB(accounts);
         } catch (error) {
-            console.error('Erro PDF:', error);
-            alert('❌ Erro ao gerar PDF!');
+            console.error('Erro ao salvar dados:', error);
+            if (error.name === 'QuotaExceededError') {
+                alert('⚠️ AVISO: Espaço de armazenamento está quase cheio!');
+            }
         }
     }
-
-    // EXPORTAR WORD
-    function exportToWord() {
-        if (!trades.length) {
-            alert('❌ Sem dados para exportar!');
-            return;
-        }
-
-        try {
-            const totalProfit = trades.reduce((sum, t) => sum + (t.profit || 0), 0);
-            const totalLoss = trades.reduce((sum, t) => sum + (t.loss || 0), 0);
-            const totalWithdraw = trades.reduce((sum, t) => sum + (t.withdraw || 0), 0);
-            const totalDeposit = trades.reduce((sum, t) => sum + (t.deposit || 0), 0);
-            const totalOperational = totalProfit - totalLoss;
-            const finalBalance = trades[trades.length - 1].finalDayBalance || systemInitialBalance;
-            const totalPercent = systemInitialBalance ? ((totalOperational / systemInitialBalance) * 100).toFixed(2) : '0.00';
-
-            let rows = '';
-            trades.forEach((t, i) => {
-                rows += `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td>${t.date}</td>
-                        <td>R$ ${(t.profit || 0).toFixed(2)}</td>
-                        <td>R$ ${(t.loss || 0).toFixed(2)}</td>
-                        <td>R$ ${(t.withdraw || 0).toFixed(2)}</td>
-                        <td>R$ ${(t.deposit || 0).toFixed(2)}</td>
-                        <td>R$ ${(t.operationalResult || 0).toFixed(2)}</td>
-                        <td>${(t.dailyPercentage || 0).toFixed(2)}%</td>
-                        <td>${t.asset || '-'}</td>
-                    </tr>
-                `;
-            });
-
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Império FX JF - Gestão Financeira do Trader</title>
-                    <style>
-                        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 30px; }
-                        h1 { color: #ffd700; text-align: center; }
-                        .header { text-align: center; margin-bottom: 30px; }
-                        .summary { border: 2px solid #333; padding: 15px; margin-bottom: 25px; background: #f9f9f9; }
-                        .summary h3 { margin-top: 0; color: #d4a000; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                        th { background: #ffd700; color: #000; padding: 10px; border: 1px solid #000; }
-                        td { padding: 8px; border: 1px solid #ccc; }
-                        .footer { text-align: center; margin-top: 30px; font-size: 11px; color: #666; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>🏛️ IMPÉRIO FX JF</h1>
-                        <h2>Gestão Financeira do Trader</h2>
-                        <p><strong>Conta:</strong> ${currentAccount}</p>
-                        <p><strong>Data:</strong> ${new Date().toLocaleString()}</p>
-                    </div>
-                    
-                    <div class="summary">
-                        <h3>📊 RESUMO</h3>
-                        <p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p>
-                        <p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p>
-                        <p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p>
-                        <p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p>
-                        <p><strong>Rentabilidade:</strong> ${totalPercent}%</p>
-                        <p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p>
-                    </div>
-                    
-                    <h3>📋 OPERAÇÕES</h3>
-                    <table>
-                        <thead>
-                            <tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>%</th><th>Ativo</th></tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                    
-                    <div class="footer">
-                        <p>IMPÉRIO FX JF - Gestão Financeira do Trader</p>
-                        <p>Sistema Profissional de Gerenciamento</p>
-                    </div>
-                </body>
-                </html>
-            `;
-
-            const fileName = `ImperioFXJF_Word_${currentAccount}_${new Date().toISOString().split('T')[0]}.doc`;
-            const blob = new Blob([htmlContent], { type: 'application/msword' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            
-            alert('✅ Word exportado com sucesso!');
-        } catch (error) {
-            console.error('Erro Word:', error);
-            alert('❌ Erro ao exportar Word!');
-        }
+    
+    async function toggleTheme() {
+        document.body.classList.toggle('light-mode');
+        const newTheme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
+        await saveSettingsToDB('theme', newTheme);
+        updateChart();
     }
-
-    // BACKUP COMPLETO
-    function exportBackup() {
+    
+    async function exportBackup() {
         try {
             const backupData = {
-                version: '2.0',
+                version: '3.0',
                 exportDate: new Date().toISOString(),
                 accounts: accounts,
                 currentAccount: currentAccount,
                 lastAccount: localStorage.getItem('imperiofxjf_last_account'),
-                theme: localStorage.getItem('theme') || 'dark',
+                theme: document.body.classList.contains('light-mode') ? 'light' : 'dark',
                 totalAccounts: Object.keys(accounts).length,
                 totalTrades: trades.length
             };
-
+            
             const backupJSON = JSON.stringify(backupData, null, 2);
             const fileName = `ImperioFXJF_Backup_${currentAccount}_${new Date().toISOString().split('T')[0]}.json`;
             
@@ -1188,23 +1430,22 @@
             alert('❌ Erro ao exportar backup!');
         }
     }
-
-    // IMPORTAR BACKUP
-    function importBackup(input) {
+    
+    async function importBackup(input) {
         const file = input.files[0];
         if (!file) {
             alert('❌ Nenhum arquivo selecionado!');
             return;
         }
-
+        
         if (!file.name.endsWith('.json')) {
             alert('❌ Por favor, selecione um arquivo JSON válido!');
             input.value = '';
             return;
         }
-
+        
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
             try {
                 const backupData = JSON.parse(e.target.result);
                 
@@ -1213,18 +1454,19 @@
                     input.value = '';
                     return;
                 }
-
-                const confirmMsg = `⚠️ ATENÇÃO: Isso irá substituir TODOS os dados atuais!\n\n📦 Contas no backup: ${Object.keys(backupData.accounts).length}\n📊 Total de registros: ${Object.values(backupData.accounts).reduce((sum, acc) => sum + (acc.trades?.length || 0), 0)}\n\nDeseja continuar?`;
+                
+                const totalRegistros = Object.values(backupData.accounts).reduce((sum, acc) => sum + (acc.trades?.length || 0), 0);
+                const confirmMsg = `⚠️ ATENÇÃO: Isso irá substituir TODOS os dados atuais!\n\n📦 Contas no backup: ${Object.keys(backupData.accounts).length}\n📊 Total de registros: ${totalRegistros}\n\nDeseja continuar?`;
                 
                 if (confirm(confirmMsg)) {
                     accounts = backupData.accounts;
                     currentAccount = backupData.currentAccount || Object.keys(accounts)[0];
                     
-                    localStorage.setItem('imperiofxjf_all_accounts_v13', JSON.stringify(accounts));
+                    await saveAllAccountsToDB(accounts);
                     localStorage.setItem('imperiofxjf_last_account', backupData.lastAccount || currentAccount);
                     
                     if (backupData.theme) {
-                        localStorage.setItem('theme', backupData.theme);
+                        await saveSettingsToDB('theme', backupData.theme);
                         if (backupData.theme === 'light') {
                             document.body.classList.add('light-mode');
                         } else {
@@ -1236,11 +1478,11 @@
                     loadAccountData(currentAccount);
                     updateAll();
                     
-                    alert(`✅ Backup restaurado com sucesso!\n📦 ${Object.keys(accounts).length} conta(s) carregada(s)`);
+                    alert(`✅ Backup restaurado com sucesso!\n📦 ${Object.keys(accounts).length} conta(s) carregada(s)\n📊 ${totalRegistros} registro(s) restaurados`);
                 }
             } catch (error) {
                 console.error('Erro ao importar:', error);
-                alert('❌ Erro ao ler o arquivo de backup. Verifique se o arquivo é válido.');
+                alert('❌ Erro ao ler o arquivo de backup.');
             }
             input.value = '';
         };
@@ -1252,78 +1494,8 @@
         
         reader.readAsText(file);
     }
-
-    // ==================== FUNÇÕES DE JUROS COMPOSTOS ====================
-    function calculateCompoundInterest() {
-        const initialValue = parseFloat(document.getElementById('initialValue').value);
-        const monthlyContribution = parseFloat(document.getElementById('monthlyContribution').value);
-        const interestRate = parseFloat(document.getElementById('interestRate').value);
-        const timeMonths = parseInt(document.getElementById('timeMonths').value);
-
-        if (isNaN(initialValue) || isNaN(monthlyContribution) || isNaN(interestRate) || isNaN(timeMonths)) {
-            document.getElementById('compoundResult').innerHTML = `
-                <strong>⚠️ ERRO:</strong><br>
-                <span style="color: #ff5252;">Preencha todos os campos corretamente!</span>
-            `;
-            return;
-        }
-
-        if (initialValue < 0 || monthlyContribution < 0 || interestRate < 0 || timeMonths < 0) {
-            document.getElementById('compoundResult').innerHTML = `
-                <strong>⚠️ ERRO:</strong><br>
-                <span style="color: #ff5252;">Valores não podem ser negativos!</span>
-            `;
-            return;
-        }
-
-        const rate = interestRate / 100;
-        let futureValue = initialValue * Math.pow(1 + rate, timeMonths);
-        if (monthlyContribution > 0 && rate > 0) {
-            futureValue += monthlyContribution * ((Math.pow(1 + rate, timeMonths) - 1) / rate);
-        } else if (monthlyContribution > 0 && rate === 0) {
-            futureValue += monthlyContribution * timeMonths;
-        }
-        const totalInvested = initialValue + (monthlyContribution * timeMonths);
-        const totalEarned = futureValue - totalInvested;
-
-        document.getElementById('compoundResult').innerHTML = `
-            <strong>📊 RESULTADO DO INVESTIMENTO</strong><br><br>
-            <div class="main-value">R$ ${futureValue.toFixed(2)}</div>
-            <div style="margin: 10px 0;">📈 Valor Futuro (Montante)</div>
-            <hr style="margin: 10px 0; border-color: #3a3f5e;">
-            <div><strong>💰 Total Investido:</strong> <span style="color: #2196f3;">R$ ${totalInvested.toFixed(2)}</span></div>
-            <div><strong>✨ Juros Ganhos:</strong> <span class="${totalEarned >= 0 ? 'profit-positive' : 'profit-negative'}">R$ ${totalEarned.toFixed(2)}</span></div>
-            <div><strong>📊 Rentabilidade Total:</strong> <span class="${totalEarned >= 0 ? 'profit-positive' : 'profit-negative'}">${((futureValue - totalInvested) / totalInvested * 100).toFixed(2)}%</span></div>
-            <div style="margin-top: 10px; font-size: 0.9em; color: #aaa;">⏱️ Período: ${timeMonths} mes(es) | 📊 Taxa: ${interestRate}% ao mês</div>
-        `;
-    }
-
-    // ==================== FUNÇÕES DO SISTEMA PRINCIPAL (MANTIDAS) ====================
-    function loadAllAccounts() {
-        const stored = localStorage.getItem('imperiofxjf_all_accounts_v13');
-        if (stored) {
-            try {
-                accounts = JSON.parse(stored);
-            } catch(e) {
-                accounts = { 'Conta Principal': { trades: [], initialBalance: null } };
-            }
-        } else {
-            accounts = { 'Conta Principal': { trades: [], initialBalance: null } };
-            saveAllAccounts();
-        }
-        updateAccountSelect();
-        const lastAccount = localStorage.getItem('imperiofxjf_last_account');
-        if (lastAccount && accounts[lastAccount]) {
-            loadAccountData(lastAccount);
-        } else {
-            loadAccountData(Object.keys(accounts)[0]);
-        }
-    }
-
-    function saveAllAccounts() {
-        localStorage.setItem('imperiofxjf_all_accounts_v13', JSON.stringify(accounts));
-    }
-
+    
+    // Funções de gerenciamento de contas
     function updateAccountSelect() {
         const select = document.getElementById('accountSelect');
         select.innerHTML = '';
@@ -1335,7 +1507,7 @@
             select.appendChild(option);
         });
     }
-
+    
     function loadAccountData(accountName) {
         if (!accountName || !accounts[accountName]) return;
         currentAccount = accountName;
@@ -1346,7 +1518,6 @@
         if (systemInitialBalance !== null) {
             document.getElementById('initialBalanceStatus').style.display = 'block';
             document.getElementById('initialBalanceStatus').innerHTML = `✅ Saldo inicial: R$ ${systemInitialBalance.toFixed(2)}`;
-            document.getElementById('initialBalanceStatus').style.background = 'rgba(76,175,80,0.2)';
         } else {
             document.getElementById('initialBalanceStatus').style.display = 'none';
         }
@@ -1357,7 +1528,7 @@
         }
         updateAll();
     }
-
+    
     function switchAccount() {
         const select = document.getElementById('accountSelect');
         const newAccount = select.value;
@@ -1365,8 +1536,8 @@
             loadAccountData(newAccount);
         }
     }
-
-    function createNewAccount() {
+    
+    async function createNewAccount() {
         const newName = document.getElementById('newAccountName').value.trim();
         if (!newName) {
             alert('Digite um nome para a nova conta!');
@@ -1377,42 +1548,42 @@
             return;
         }
         accounts[newName] = { trades: [], initialBalance: null };
-        saveAllAccounts();
+        await saveAllAccounts();
         updateAccountSelect();
         loadAccountData(newName);
         document.getElementById('newAccountName').value = '';
         alert(`✅ Conta "${newName}" criada com sucesso!`);
     }
-
-    function deleteCurrentAccount() {
+    
+    async function deleteCurrentAccount() {
         if (!currentAccount) return;
         if (Object.keys(accounts).length === 1) {
             alert('❌ Não é possível excluir a única conta. Crie outra conta primeiro.');
             return;
         }
-        if (confirm(`Tem certeza que deseja excluir a conta "${currentAccount}"? Todos os dados serão perdidos!`)) {
+        if (confirm(`Tem certeza que deseja excluir a conta "${currentAccount}"?`)) {
             delete accounts[currentAccount];
-            saveAllAccounts();
+            await saveAllAccounts();
             updateAccountSelect();
             const firstAccount = Object.keys(accounts)[0];
             loadAccountData(firstAccount);
             alert(`✅ Conta "${currentAccount}" excluída!`);
         }
     }
-
-    function resetCurrentAccount() {
+    
+    async function resetCurrentAccount() {
         if (!currentAccount) return;
         if (confirm(`Tem certeza que deseja resetar TODOS os dados da conta "${currentAccount}"?`)) {
             accounts[currentAccount].trades = [];
             accounts[currentAccount].initialBalance = null;
-            saveAllAccounts();
+            await saveAllAccounts();
             loadAccountData(currentAccount);
             closeResetModal();
             alert(`✅ Conta "${currentAccount}" resetada com sucesso!`);
         }
     }
-
-    function setInitialBalance() {
+    
+    async function setInitialBalance() {
         if (!currentAccount) {
             alert('Nenhuma conta selecionada!');
             return;
@@ -1428,14 +1599,13 @@
             trades = accounts[currentAccount].trades;
             recalculateBalances();
         }
-        saveAllAccounts();
+        await saveAllAccounts();
         updateAll();
         document.getElementById('initialBalanceStatus').style.display = 'block';
-        document.getElementById('initialBalanceStatus').innerHTML = `✅ Saldo inicial de R$ ${systemInitialBalance.toFixed(2)} configurado para conta "${currentAccount}"!`;
-        document.getElementById('initialBalanceStatus').style.background = 'rgba(76,175,80,0.2)';
+        document.getElementById('initialBalanceStatus').innerHTML = `✅ Saldo inicial de R$ ${systemInitialBalance.toFixed(2)} configurado!`;
         document.getElementById('accountStatus').innerHTML = `📌 Conta atual: <strong>${currentAccount}</strong> | ${trades.length} registro(s) | Saldo: R$ ${systemInitialBalance.toFixed(2)}`;
     }
-
+    
     function recalculateBalances() {
         if (systemInitialBalance === null || trades.length === 0) return;
         const tradesByDay = {};
@@ -1475,7 +1645,18 @@
         accounts[currentAccount].trades = trades;
         saveAllAccounts();
     }
-
+    
+    async function deleteTrade(id) {
+        if (confirm('Remover este registro?')) {
+            trades = trades.filter(t => t.id != id);
+            accounts[currentAccount].trades = trades;
+            recalculateBalances();
+            await saveAllAccounts();
+            updateAll();
+        }
+    }
+    
+    // Funções de UI e cálculo (mantidas)
     function setupLotsValidation() {
         const profitInput = document.getElementById('profitValue');
         const lossInput = document.getElementById('lossValue');
@@ -1504,8 +1685,8 @@
         lossInput.addEventListener('input', validateLots);
         validateLots();
     }
-
-    document.getElementById('tradeForm').addEventListener('submit', function(e) {
+    
+    document.getElementById('tradeForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         if (!currentAccount) {
             alert('⚠️ Nenhuma conta selecionada!');
@@ -1528,7 +1709,7 @@
             return;
         }
         if (profit === 0 && loss === 0 && withdraw === 0 && deposit === 0) {
-            alert('Preencha pelo menos um campo: Lucro, Perda, Saque ou Aporte!');
+            alert('Preencha pelo menos um campo!');
             return;
         }
         const hasOperation = profit > 0 || loss > 0;
@@ -1536,6 +1717,7 @@
             alert('Quando houver Lucro ou Perda, o campo LOTES é obrigatório!');
             return;
         }
+        
         let initialBalanceForDay = systemInitialBalance;
         const tradesThisDay = trades.filter(t => t.date === date);
         if (tradesThisDay.length > 0) {
@@ -1548,6 +1730,7 @@
                 initialBalanceForDay = lastTradePrev.finalDayBalance;
             }
         }
+        
         const operationalResult = profit - loss;
         const externalMovement = deposit - withdraw;
         const totalResult = operationalResult + externalMovement;
@@ -1572,8 +1755,9 @@
         trades.push(newTrade);
         accounts[currentAccount].trades = trades;
         recalculateBalances();
-        saveAllAccounts();
+        await saveAllAccounts();
         updateAll();
+        
         document.getElementById('profitValue').value = '';
         document.getElementById('lossValue').value = '';
         document.getElementById('withdrawValue').value = '';
@@ -1582,19 +1766,15 @@
         document.getElementById('tradeAsset').value = '';
         document.getElementById('tradeNote').value = '';
         updateDailyInitialBalanceDisplay(date);
-        if (hasOperation) {
-            alert('✅ Operação registrada! Rentabilidade calculada apenas sobre lucro/perda.');
-        } else {
-            alert('✅ Saque/Aporte registrado! Saldo atualizado, mas não afeta a rentabilidade %');
-        }
+        alert('✅ Registro adicionado com sucesso!');
     });
-
+    
     function getPreviousDayWithTrades(currentDate) {
         const dates = [...new Set(trades.map(t => t.date))].sort();
         const currentIndex = dates.indexOf(currentDate);
         return currentIndex > 0 ? dates[currentIndex - 1] : null;
     }
-
+    
     function updateMainMetrics() {
         if (systemInitialBalance === null) {
             document.getElementById('mainMetrics').innerHTML = '<div class="metric-card"><h4>⚠️</h4><div class="value">Configure Saldo</div></div>';
@@ -1616,17 +1796,15 @@
             <div class="metric-card"><h4>📉 Perda Total</h4><div class="value profit-negative">R$ ${totalLoss.toFixed(2)}</div></div>
             <div class="metric-card"><h4>🏧 Total Saques</h4><div class="value withdraw-negative">R$ ${totalWithdraw.toFixed(2)}</div></div>
             <div class="metric-card"><h4>💰 Total Aportes</h4><div class="value deposit-positive">R$ ${totalDeposit.toFixed(2)}</div></div>
-            <div class="metric-card"><h4>📊 Resultado Operac.</h4><div class="value ${totalOperationalResult >= 0 ? 'profit-positive' : 'profit-negative'}">${totalOperationalResult >= 0 ? '+' : ''}R$ ${totalOperationalResult.toFixed(2)}</div></div>
+            <div class="metric-card"><h4>📊 Resultado Op.</h4><div class="value ${totalOperationalResult >= 0 ? 'profit-positive' : 'profit-negative'}">${totalOperationalResult >= 0 ? '+' : ''}R$ ${totalOperationalResult.toFixed(2)}</div></div>
             <div class="metric-card"><h4>🏁 Saldo Final</h4><div class="value">R$ ${finalBalance.toFixed(2)}</div></div>
             <div class="metric-card"><h4>📈 Rentabilidade %</h4><div class="value ${totalOperationalPercentage >= 0 ? 'profit-positive' : 'profit-negative'}">${totalOperationalPercentage >= 0 ? '+' : ''}${totalOperationalPercentage.toFixed(2)}%</div></div>
         `;
     }
-
+    
     function updatePercentageCards() {
         if (trades.length === 0 || systemInitialBalance === null) {
-            document.getElementById('percentageCards').innerHTML = `
-                <div class="card"><div class="card-title">📊 Porcentagens</div><p style="text-align:center;">Adicione registros para ver as porcentagens</p></div>
-            `;
+            document.getElementById('percentageCards').innerHTML = `<div class="card"><div class="card-title">📊 Porcentagens</div><p style="text-align:center;">Adicione registros para ver as porcentagens</p></div>`;
             return;
         }
         const today = document.getElementById('tradeDate').value;
@@ -1660,9 +1838,8 @@
                     <div style="font-size: 3em; font-weight: bold; ${todayOperationalResult >= 0 ? 'color: #4caf50' : 'color: #ff5252'}">
                         ${todayOperationalPercentage >= 0 ? '+' : ''}${todayOperationalPercentage.toFixed(2)}%
                     </div>
-                    <div style="margin-top: 10px;">Resultado operacional: ${todayOperationalResult >= 0 ? '+' : ''}R$ ${todayOperationalResult.toFixed(2)}</div>
+                    <div style="margin-top: 10px;">Resultado: ${todayOperationalResult >= 0 ? '+' : ''}R$ ${todayOperationalResult.toFixed(2)}</div>
                     <div style="font-size: 0.9em; color: #aaa;">${todayTrades.length} registro(s) hoje</div>
-                    <small style="color: #aaa;">* Porcentagem baseada APENAS em lucro/perda</small>
                 </div>
             </div>
             <div class="card">
@@ -1672,27 +1849,26 @@
                         ${totalOperationalPercentage >= 0 ? '+' : ''}${totalOperationalPercentage.toFixed(2)}%
                     </div>
                     <div style="margin-top: 10px;">Lucro/perda acumulado: ${totalOperationalResult >= 0 ? '+' : ''}R$ ${totalOperationalResult.toFixed(2)}</div>
-                    <div style="font-size: 0.9em; color: #aaa;">Base: Saldo Inicial R$ ${systemInitialBalance.toFixed(2)}</div>
                 </div>
             </div>
             <div class="card">
                 <div class="card-title">📊 MÉDIAS E EXTREMOS</div>
                 <div style="padding: 10px;">
-                    <div><strong>📈 Média % por operação:</strong> <span class="${avgPercentage >= 0 ? 'profit-positive' : 'profit-negative'}">${avgPercentage >= 0 ? '+' : ''}${avgPercentage.toFixed(2)}%</span></div>
-                    <div><strong>🏆 Maior ganho %:</strong> <span class="profit-positive">+${maxPositive.toFixed(2)}%</span></div>
-                    <div><strong>💔 Maior perda %:</strong> <span class="profit-negative">${maxNegative.toFixed(2)}%</span></div>
-                    <div><strong>📊 Total de registros:</strong> ${trades.length}</div>
+                    <div><strong>📈 Média %:</strong> <span class="${avgPercentage >= 0 ? 'profit-positive' : 'profit-negative'}">${avgPercentage >= 0 ? '+' : ''}${avgPercentage.toFixed(2)}%</span></div>
+                    <div><strong>🏆 Maior ganho:</strong> <span class="profit-positive">+${maxPositive.toFixed(2)}%</span></div>
+                    <div><strong>💔 Maior perda:</strong> <span class="profit-negative">${maxNegative.toFixed(2)}%</span></div>
+                    <div><strong>📊 Total registros:</strong> ${trades.length}</div>
                     <div><strong>✅ Operações positivas:</strong> ${trades.filter(t => (t.operationalResult || 0) > 0).length}</div>
-                    <div><strong>❌ Operações negativas:</strong> ${trades.filter(t => (t.operationalResult || 0) < 0).length}</div>
+                    <div><strong>❌ Negativas:</strong> ${trades.filter(t => (t.operationalResult || 0) < 0).length}</div>
                     <div><strong>🎯 Taxa de acerto:</strong> ${((trades.filter(t => (t.operationalResult || 0) > 0).length / trades.filter(t => t.profit !== 0 || t.loss !== 0).length || 0) * 100).toFixed(1)}%</div>
                     <hr style="margin: 10px 0; border-color: #3a3f5e;">
-                    <div><strong>💰 Total de Aportes:</strong> ${totalDepositsCount} vez(es) | <span class="deposit-positive">R$ ${totalDepositsValue.toFixed(2)}</span></div>
-                    <div><strong>🏧 Total de Saques:</strong> ${totalWithdrawsCount} vez(es) | <span class="withdraw-negative">R$ ${totalWithdrawsValue.toFixed(2)}</span></div>
+                    <div><strong>💰 Aportes:</strong> ${totalDepositsCount}x | <span class="deposit-positive">R$ ${totalDepositsValue.toFixed(2)}</span></div>
+                    <div><strong>🏧 Saques:</strong> ${totalWithdrawsCount}x | <span class="withdraw-negative">R$ ${totalWithdrawsValue.toFixed(2)}</span></div>
                 </div>
             </div>
         `;
     }
-
+    
     function calculateHedgeAbater() {
         const profitValue = parseFloat(document.getElementById('profitToRealize').value);
         const profitLots = parseFloat(document.getElementById('lotsProfit').value);
@@ -1721,7 +1897,275 @@
             ${wasLimited ? '<div class="profit-positive">✅ Você abateu TODA a operação negativa!</div>' : ''}
         `;
     }
-
+    
+    function calculateGridDistance() {
+        const lotSize = parseFloat(document.getElementById('gridLotSize').value);
+        const distancePoints = parseFloat(document.getElementById('gridDistance').value);
+        const pointValue = parseFloat(document.getElementById('gridPointValue').value);
+        const totalDistance = parseFloat(document.getElementById('gridTotalDistance').value);
+        
+        if (isNaN(lotSize) || lotSize <= 0 || isNaN(distancePoints) || distancePoints <= 0 || isNaN(pointValue) || pointValue <= 0 || isNaN(totalDistance) || totalDistance <= 0) {
+            alert('❌ Preencha todos os campos corretamente!');
+            return;
+        }
+        
+        const numberOfIntervals = Math.floor(totalDistance / distancePoints);
+        const numberOfOrders = numberOfIntervals + 1;
+        let totalCostAllOrders = 0;
+        let ordersDetails = [];
+        
+        for (let i = 0; i < numberOfOrders; i++) {
+            const distanceThisOrder = Math.max(0, totalDistance - (i * distancePoints));
+            const orderCost = lotSize * pointValue * distanceThisOrder;
+            ordersDetails.push({
+                ordem: i,
+                distanciaDoInicio: i * distancePoints,
+                distanciaPercorrida: distanceThisOrder,
+                custoIndividual: orderCost
+            });
+            totalCostAllOrders += orderCost;
+        }
+        
+        const maxOrderCost = ordersDetails[0].custoIndividual;
+        let resultHTML = `
+            <strong>📊 RESULTADO DO GRID PROGRESSIVO</strong><br><br>
+            <div class="grid-lotes-destaque">📈 ${numberOfOrders} ORDENS NO TOTAL</div>
+            <div>🔹 Ordem mais distante: ${lotSize} lote(s)</div>
+            <div>🔹 Distanciamento: ${distancePoints.toLocaleString()} pontos</div>
+            <div>🔹 Cobertura total: ${totalDistance.toLocaleString()} pontos</div>
+            <hr style="margin: 10px 0;">
+            <div><strong>💰 Valor por ponto:</strong> R$ ${pointValue.toFixed(6)}</div>
+            <div><strong>💰 Custo ordem mais distante:</strong> R$ ${maxOrderCost.toFixed(2)}</div>
+            <hr style="margin: 10px 0;">
+            <div><strong>💰 Custo TOTAL:</strong> <span class="profit-positive" style="font-size: 1.3em;">R$ ${totalCostAllOrders.toFixed(2)}</span></div>
+            <div><strong>📊 Custo médio por ordem:</strong> R$ ${(totalCostAllOrders / numberOfOrders).toFixed(2)}</div>
+        `;
+        
+        document.getElementById('gridResult').innerHTML = resultHTML;
+    }
+    
+    function calculateCompoundInterest() {
+        const initialValue = parseFloat(document.getElementById('initialValue').value);
+        const monthlyContribution = parseFloat(document.getElementById('monthlyContribution').value);
+        const interestRate = parseFloat(document.getElementById('interestRate').value);
+        const timeMonths = parseInt(document.getElementById('timeMonths').value);
+        
+        if (isNaN(initialValue) || isNaN(monthlyContribution) || isNaN(interestRate) || isNaN(timeMonths)) {
+            document.getElementById('compoundResult').innerHTML = `<strong>⚠️ Preencha todos os campos!</strong>`;
+            return;
+        }
+        
+        const rate = interestRate / 100;
+        let futureValue = initialValue * Math.pow(1 + rate, timeMonths);
+        if (monthlyContribution > 0 && rate > 0) {
+            futureValue += monthlyContribution * ((Math.pow(1 + rate, timeMonths) - 1) / rate);
+        } else if (monthlyContribution > 0 && rate === 0) {
+            futureValue += monthlyContribution * timeMonths;
+        }
+        const totalInvested = initialValue + (monthlyContribution * timeMonths);
+        const totalEarned = futureValue - totalInvested;
+        
+        document.getElementById('compoundResult').innerHTML = `
+            <strong>📊 RESULTADO DO INVESTIMENTO</strong><br><br>
+            <div class="main-value">R$ ${futureValue.toFixed(2)}</div>
+            <div style="margin: 10px 0;">📈 Valor Futuro</div>
+            <hr style="margin: 10px 0;">
+            <div><strong>💰 Total Investido:</strong> R$ ${totalInvested.toFixed(2)}</div>
+            <div><strong>✨ Juros Ganhos:</strong> <span class="${totalEarned >= 0 ? 'profit-positive' : 'profit-negative'}">R$ ${totalEarned.toFixed(2)}</span></div>
+            <div><strong>📊 Rentabilidade:</strong> ${((futureValue - totalInvested) / totalInvested * 100).toFixed(2)}%</div>
+            <div style="margin-top: 10px; font-size: 0.9em;">⏱️ ${timeMonths} meses | 📊 ${interestRate}% ao mês</div>
+        `;
+    }
+    
+    function exportToExcel() {
+        if (!trades.length) {
+            alert('❌ Sem dados para exportar!');
+            return;
+        }
+        const data = trades.map(t => ({
+            '📅 Data': t.date,
+            '💰 Saldo Antes': `R$ ${(t.initialBalance || 0).toFixed(2)}`,
+            '📈 Lucro': `R$ ${(t.profit || 0).toFixed(2)}`,
+            '📉 Perda': `R$ ${(t.loss || 0).toFixed(2)}`,
+            '🏧 Saque': `R$ ${(t.withdraw || 0).toFixed(2)}`,
+            '💵 Aporte': `R$ ${(t.deposit || 0).toFixed(2)}`,
+            '📊 Resultado': `R$ ${(t.operationalResult || 0).toFixed(2)}`,
+            '📈 %': `${(t.dailyPercentage || 0).toFixed(2)}%`,
+            '🎯 Lotes': t.lots || 0,
+            '📊 Ativo': t.asset || '-',
+            '🏁 Saldo Final': `R$ ${(t.finalDayBalance || 0).toFixed(2)}`
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, `Relatorio_${currentAccount}`);
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const fileName = `ImperioFXJF_${currentAccount}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        downloadFile(excelBuffer, fileName, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        alert('✅ Excel exportado!');
+    }
+    
+    function generatePDF() {
+        if (!trades.length) {
+            alert('❌ Sem dados para exportar!');
+            return;
+        }
+        
+        // Versão melhorada do PDF com cores mais vivas
+        const totalProfit = trades.reduce((sum, t) => sum + (t.profit || 0), 0);
+        const totalLoss = trades.reduce((sum, t) => sum + (t.loss || 0), 0);
+        const totalOperational = totalProfit - totalLoss;
+        const finalBalance = trades[trades.length - 1].finalDayBalance || systemInitialBalance;
+        const totalPercent = systemInitialBalance ? ((totalOperational / systemInitialBalance) * 100).toFixed(2) : '0.00';
+        
+        let rows = '';
+        trades.forEach((t, i) => {
+            const resultClass = (t.operationalResult || 0) >= 0 ? 'profit-positive' : 'profit-negative';
+            rows += `
+                <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 8px; border: 1px solid #ddd;">${i+1}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${t.date}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; color: #2e7d32; font-weight: bold;">R$ ${(t.profit||0).toFixed(2)}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; color: #c62828; font-weight: bold;">R$ ${(t.loss||0).toFixed(2)}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; color: #c62828;">R$ ${(t.withdraw||0).toFixed(2)}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; color: #2e7d32;">R$ ${(t.deposit||0).toFixed(2)}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; ${resultClass === 'profit-positive' ? 'color: #2e7d32; font-weight: bold;' : 'color: #c62828; font-weight: bold;'}">${(t.operationalResult||0) >= 0 ? '+' : ''}R$ ${(t.operationalResult||0).toFixed(2)}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; ${resultClass === 'profit-positive' ? 'color: #2e7d32; font-weight: bold;' : 'color: #c62828; font-weight: bold;'}">${(t.dailyPercentage||0) >= 0 ? '+' : ''}${(t.dailyPercentage||0).toFixed(2)}%</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${t.asset||'-'}</td>
+                </tr>
+            `;
+        });
+        
+        const htmlContent = `
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Relatório Império FX JF</title>
+                <style>
+                    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; }
+                    h1 { color: #ff8c00; text-align: center; }
+                    .header { text-align: center; margin-bottom: 30px; }
+                    .metrics { background: #f5f5f5; padding: 15px; border-radius: 10px; margin: 20px 0; display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+                    .metric { text-align: center; }
+                    .metric-value { font-size: 20px; font-weight: bold; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th { background: #ffd700; color: #000; padding: 10px; border: 1px solid #ddd; }
+                    td { padding: 8px; border: 1px solid #ddd; }
+                    .profit-positive { color: #2e7d32; font-weight: bold; }
+                    .profit-negative { color: #c62828; font-weight: bold; }
+                    .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #999; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>🏛️ IMPÉRIO FX JF</h1>
+                    <p>Gestão Financeira do Trader</p>
+                    <p><strong>Conta:</strong> ${currentAccount} | <strong>Data:</strong> ${new Date().toLocaleString()}</p>
+                </div>
+                
+                <div class="metrics">
+                    <div class="metric"><div>💰 Saldo Inicial</div><div class="metric-value">R$ ${(systemInitialBalance||0).toFixed(2)}</div></div>
+                    <div class="metric"><div>📈 Lucro Total</div><div class="metric-value" style="color:#2e7d32">R$ ${totalProfit.toFixed(2)}</div></div>
+                    <div class="metric"><div>📉 Perda Total</div><div class="metric-value" style="color:#c62828">R$ ${totalLoss.toFixed(2)}</div></div>
+                    <div class="metric"><div>📊 Resultado</div><div class="metric-value" style="color:${totalOperational>=0?'#2e7d32':'#c62828'}">${totalOperational>=0?'+':''}R$ ${totalOperational.toFixed(2)}</div></div>
+                    <div class="metric"><div>📈 Rentabilidade</div><div class="metric-value" style="color:${parseFloat(totalPercent)>=0?'#2e7d32':'#c62828'}">${totalPercent>=0?'+':''}${totalPercent}%</div></div>
+                    <div class="metric"><div>🏁 Saldo Final</div><div class="metric-value">R$ ${finalBalance.toFixed(2)}</div></div>
+                </div>
+                
+                <h3>📋 Histórico de Operações</h3>
+                <table>
+                    <thead>
+                        <tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Resultado</th><th>%</th><th>Ativo</th></tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                
+                <div class="footer">
+                    <p>Relatório gerado automaticamente pelo Sistema Império FX JF</p>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        html2pdf().set({ 
+            margin: 10, 
+            filename: `ImperioFXJF_${currentAccount}_${new Date().toISOString().split('T')[0]}.pdf`, 
+            html2canvas: { scale: 3, letterRendering: true, useCORS: true, logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        }).from(htmlContent).save();
+        
+        setTimeout(() => alert('✅ PDF gerado com qualidade melhorada!'), 1000);
+    }
+    
+    function exportToWord() {
+        if (!trades.length) {
+            alert('❌ Sem dados para exportar!');
+            return;
+        }
+        const totalProfit = trades.reduce((sum, t) => sum + (t.profit || 0), 0);
+        const totalLoss = trades.reduce((sum, t) => sum + (t.loss || 0), 0);
+        const totalOperational = totalProfit - totalLoss;
+        const finalBalance = trades[trades.length - 1].finalDayBalance || systemInitialBalance;
+        const totalPercent = systemInitialBalance ? ((totalOperational / systemInitialBalance) * 100).toFixed(2) : '0.00';
+        
+        let rows = '';
+        trades.forEach((t, i) => {
+            const resultClass = (t.operationalResult || 0) >= 0 ? 'profit-positive' : 'profit-negative';
+            rows += `
+                <tr>
+                    <td>${i+1}</td>
+                    <td>${t.date}</td>
+                    <td style="color:#2e7d32; font-weight:bold;">R$ ${(t.profit||0).toFixed(2)}</td>
+                    <td style="color:#c62828; font-weight:bold;">R$ ${(t.loss||0).toFixed(2)}</td>
+                    <td style="color:#c62828;">R$ ${(t.withdraw||0).toFixed(2)}</td>
+                    <td style="color:#2e7d32;">R$ ${(t.deposit||0).toFixed(2)}</td>
+                    <td style="color:${(t.operationalResult||0) >= 0 ? '#2e7d32' : '#c62828'}; font-weight:bold;">${(t.operationalResult||0) >= 0 ? '+' : ''}R$ ${(t.operationalResult||0).toFixed(2)}</td>
+                    <td style="color:${(t.dailyPercentage||0) >= 0 ? '#2e7d32' : '#c62828'}; font-weight:bold;">${(t.dailyPercentage||0) >= 0 ? '+' : ''}${(t.dailyPercentage||0).toFixed(2)}%</td>
+                    <td>${t.asset||'-'}</td>
+                </tr>
+            `;
+        });
+        
+        const htmlContent = `
+            <html><head><meta charset="UTF-8"><title>Relatório Word</title>
+            <style>
+                body{font-family:Arial;margin:20px}
+                h1{color:#ff8c00;text-align:center}
+                .metrics{background:#f5f5f5;padding:15px;margin:20px 0}
+                table{border-collapse:collapse;width:100%}
+                th,td{border:1px solid #000;padding:8px}
+                th{background:#ffd700}
+                .profit-positive{color:#2e7d32}
+                .profit-negative{color:#c62828}
+            </style>
+            </head><body>
+            <h1>IMPÉRIO FX JF</h1>
+            <p><strong>Conta:</strong> ${currentAccount} | <strong>Data:</strong> ${new Date().toLocaleString()}</p>
+            <div class="metrics">
+                <p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance||0).toFixed(2)} | 
+                <strong>Lucro:</strong> <span style="color:#2e7d32">R$ ${totalProfit.toFixed(2)}</span> | 
+                <strong>Perda:</strong> <span style="color:#c62828">R$ ${totalLoss.toFixed(2)}</span> | 
+                <strong>Resultado:</strong> <span style="color:${totalOperational>=0?'#2e7d32':'#c62828'}">${totalOperational>=0?'+':''}R$ ${totalOperational.toFixed(2)}</span> | 
+                <strong>Rentabilidade:</strong> <span style="color:${parseFloat(totalPercent)>=0?'#2e7d32':'#c62828'}">${totalPercent>=0?'+':''}${totalPercent}%</span> | 
+                <strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p>
+            </div>
+            <h3>Operações</h3>
+            <table><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Resultado</th><th>%</th><th>Ativo</th></tr></thead>
+            <tbody>${rows}</tbody></table>
+            </body></html>
+        `;
+        
+        const blob = new Blob([htmlContent], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `ImperioFXJF_${currentAccount}_${new Date().toISOString().split('T')[0]}.doc`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        alert('✅ Word exportado com formatação melhorada!');
+    }
+    
     function updateDailyOperations() {
         const today = document.getElementById('tradeDate').value;
         const todayTrades = trades.filter(t => t.date === today).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -1740,14 +2184,13 @@
                     ${trade.loss > 0 ? `<span>📉 Perda: R$ ${trade.loss.toFixed(2)}</span>` : ''}
                     ${trade.withdraw > 0 ? `<span>🏧 Saque: R$ ${trade.withdraw.toFixed(2)}</span>` : ''}
                     ${trade.deposit > 0 ? `<span>💰 Aporte: R$ ${trade.deposit.toFixed(2)}</span>` : ''}
-                    <span class="${resultClass}">📊 Resultado Op.: ${(trade.operationalResult || 0) >= 0 ? '+' : ''}R$ ${(trade.operationalResult || 0).toFixed(2)}</span>
+                    <span class="${resultClass}">📊 Resultado: ${(trade.operationalResult || 0) >= 0 ? '+' : ''}R$ ${(trade.operationalResult || 0).toFixed(2)}</span>
                     <span class="${resultClass}">📈 %: ${(trade.dailyPercentage || 0) >= 0 ? '+' : ''}${(trade.dailyPercentage || 0).toFixed(2)}%</span>
-                    ${trade.lots > 0 ? `<span>🎯 ${trade.lots} l</span>` : ''}
                 </div>
             `;
         });
     }
-
+    
     function updateDailyInitialBalanceDisplay(date) {
         const tradesToday = trades.filter(t => t.date === date);
         if (tradesToday.length > 0) {
@@ -1762,11 +2205,11 @@
             }
         }
     }
-
+    
     function updateTradesTable() {
         const tbody = document.getElementById('tradesBody');
         if (trades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="12">Nenhum registro ainda<\/td><\/tr>';
+            tbody.innerHTML = '<tr><td colspan="12">Nenhum registro ainda</td></tr>';
             return;
         }
         const sorted = [...trades].sort((a, b) => {
@@ -1793,17 +2236,7 @@
             `;
         });
     }
-
-    function deleteTrade(id) {
-        if (confirm('Remover este registro?')) {
-            trades = trades.filter(t => t.id != id);
-            accounts[currentAccount].trades = trades;
-            recalculateBalances();
-            saveAllAccounts();
-            updateAll();
-        }
-    }
-
+    
     function setDefaultDate() {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('tradeDate').value = today;
@@ -1814,7 +2247,7 @@
             updatePercentageCards();
         });
     }
-
+    
     function updateChart() {
         if (trades.length === 0 || !systemInitialBalance) {
             if (dailyChart) dailyChart?.destroy();
@@ -1823,25 +2256,18 @@
             return;
         }
         const dailyFinal = {};
-        trades.forEach(t => {
-            dailyFinal[t.date] = t.finalDayBalance;
-        });
+        trades.forEach(t => { dailyFinal[t.date] = t.finalDayBalance; });
         const dates = Object.keys(dailyFinal).sort();
         const balances = dates.map(d => dailyFinal[d]);
         const dailyCtx = document.getElementById('dailyChart').getContext('2d');
         if (dailyChart) dailyChart.destroy();
-        dailyChart = new Chart(dailyCtx, {
-            type: 'line',
-            data: { labels: dates, datasets: [{ label: 'Saldo Final', data: balances, borderColor: '#ffd700', backgroundColor: 'rgba(255,215,0,0.1)', fill: true, tension: 0.4 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#e0e0e0' } } } }
-        });
+        dailyChart = new Chart(dailyCtx, { type: 'line', data: { labels: dates, datasets: [{ label: 'Saldo Final', data: balances, borderColor: '#ffd700', backgroundColor: 'rgba(255,215,0,0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#e0e0e0' } } } } });
+        
         const monthlyData = {};
         trades.forEach(trade => {
             const [year, month] = trade.date.split('-');
             const monthKey = `${year}-${month}`;
-            if (!monthlyData[monthKey]) {
-                monthlyData[monthKey] = { finalBalance: null, lastDate: null };
-            }
+            if (!monthlyData[monthKey]) monthlyData[monthKey] = { finalBalance: null, lastDate: null };
             const tradeDate = new Date(trade.date);
             if (!monthlyData[monthKey].lastDate || tradeDate > monthlyData[monthKey].lastDate) {
                 monthlyData[monthKey].lastDate = tradeDate;
@@ -1849,78 +2275,41 @@
             }
         });
         const sortedMonths = Object.keys(monthlyData).sort();
-        const monthLabels = sortedMonths.map(m => {
-            const [year, month] = m.split('-');
-            const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-            return `${monthNames[parseInt(month)-1]}/${year}`;
-        });
+        const monthLabels = sortedMonths.map(m => { const [year, month] = m.split('-'); const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return `${monthNames[parseInt(month)-1]}/${year}`; });
         const monthBalances = sortedMonths.map(m => monthlyData[m].finalBalance);
         const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
         if (monthlyChart) monthlyChart.destroy();
-        monthlyChart = new Chart(monthlyCtx, {
-            type: 'bar',
-            data: { labels: monthLabels, datasets: [{ label: 'Saldo Final do Mês (R$)', data: monthBalances, backgroundColor: 'rgba(255,215,0,0.7)', borderColor: '#ffd700', borderWidth: 2 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#e0e0e0' } }, tooltip: { callbacks: { label: (ctx) => `R$ ${ctx.raw.toFixed(2)}` } } } }
-        });
+        monthlyChart = new Chart(monthlyCtx, { type: 'bar', data: { labels: monthLabels, datasets: [{ label: 'Saldo Final (R$)', data: monthBalances, backgroundColor: 'rgba(255,215,0,0.7)', borderColor: '#ffd700', borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#e0e0e0' } }, tooltip: { callbacks: { label: (ctx) => `R$ ${ctx.raw.toFixed(2)}` } } } } });
+        
         const assetCount = {};
-        trades.forEach(trade => {
-            if (trade.asset && trade.asset !== '-') {
-                const assetName = trade.asset;
-                assetCount[assetName] = (assetCount[assetName] || 0) + 1;
-            }
-        });
-        const sortedAssets = Object.entries(assetCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
+        trades.forEach(trade => { if (trade.asset && trade.asset !== '-') assetCount[trade.asset] = (assetCount[trade.asset] || 0) + 1; });
+        const sortedAssets = Object.entries(assetCount).sort((a,b) => b[1] - a[1]).slice(0,10);
         const assetLabels = sortedAssets.map(a => a[0]);
         const assetValues = sortedAssets.map(a => a[1]);
         const assetsCtx = document.getElementById('assetsChart').getContext('2d');
         if (assetsChart) assetsChart.destroy();
         if (assetLabels.length === 0) {
-            assetsCtx.canvas.parentElement.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">📊 Nenhum ativo registrado ainda</div>';
+            assetsCtx.canvas.parentElement.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">📊 Nenhum ativo registrado</div>';
             const newCanvas = document.createElement('canvas');
             newCanvas.id = 'assetsChart';
             assetsCtx.canvas.parentElement.appendChild(newCanvas);
             return;
         }
-        assetsChart = new Chart(assetsCtx, {
-            type: 'pie',
-            data: { labels: assetLabels, datasets: [{ data: assetValues, backgroundColor: ['#ffd700', '#ff8c00', '#4caf50', '#2196f3', '#ff5252', '#9c27b0', '#00bcd4', '#e91e63', '#cddc39', '#795548'], borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#e0e0e0', font: { size: 11 } } }, tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} trade(s)` } } } }
-        });
+        assetsChart = new Chart(assetsCtx, { type: 'pie', data: { labels: assetLabels, datasets: [{ data: assetValues, backgroundColor: ['#ffd700','#ff8c00','#4caf50','#2196f3','#ff5252','#9c27b0','#00bcd4','#e91e63','#cddc39','#795548'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#e0e0e0', font: { size: 11 } } } } } });
     }
-
-    function toggleTheme() {
-        document.body.classList.toggle('light-mode');
-        localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
-        updateChart();
-    }
-
-    function openResetModal() {
-        document.getElementById('resetModal').style.display = 'flex';
-    }
-
-    function closeResetModal() {
-        document.getElementById('resetModal').style.display = 'none';
-    }
-
-    function updateAll() {
-        updateMainMetrics();
-        updatePercentageCards();
-        updateDailyOperations();
-        updateTradesTable();
-        updateChart();
-    }
-
+    
+    function openResetModal() { document.getElementById('resetModal').style.display = 'flex'; }
+    function closeResetModal() { document.getElementById('resetModal').style.display = 'none'; }
+    function updateAll() { updateMainMetrics(); updatePercentageCards(); updateDailyOperations(); updateTradesTable(); updateChart(); }
+    
     // Event listeners
-    ['profitToRealize', 'lotsProfit', 'totalLoss', 'lotsLoss'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('input', calculateHedgeAbater);
-    });
-
-    // Inicialização
-    if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
-    setupLotsValidation();
-    setDefaultDate();
-    loadAllAccounts();
+    ['profitToRealize', 'lotsProfit', 'totalLoss', 'lotsLoss'].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('input', calculateHedgeAbater); });
+    
+    (async function init() {
+        setupLotsValidation();
+        setDefaultDate();
+        await loadAllAccounts();
+    })();
 </script>
 </body>
-                </html>
+    </html>

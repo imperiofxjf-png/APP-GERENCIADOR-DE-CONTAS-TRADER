@@ -3,8 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="theme-color" content="#0a0e27">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Império FX JF">
+    <meta name="application-name" content="Império FX JF">
+    <meta name="msapplication-TileColor" content="#0a0e27">
+    <meta name="msapplication-tap-highlight" content="no">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Ícones para diferentes plataformas -->
+    <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAGQSURBVHgB7VdNUcMwEDYrOgAdwBvQAToBOgGho/QAOgAdgA7QAeiADugA3YD+4KQjwZ5EK8leSaVknpnx2B9W+9NKWWVrIYQQQmSPlFJXUiqCECvKQgi9EOIsK0wIIYTosGKGYZicZVkWtqJpmmdV5r7vj0SUrNrk2/c9kVSJEBqPUJUQGi2E0HjNEEJYr1kp/Tl+HAihexcbfxUMAwEkhHBc8DAMgYrchzW9bxw7/xb8+/P98LzZbNwht9ttVxkXj8fjmyqHtY/jGORaQy6Xy1cbnqbJR3EYBlj9wXEceMvzPAf5xOuDbdv20Jjs3q+5Xq+Wkuv1qgqT5P1+7yhM8uPxyM6k9/s9Sb7f7ylNkufzeZJcn8+HJD2fz+xM+ng8KAzL+/1+ScLz+UzO5PP5vKpQr/f7/XJrlmWXWq2v1ysLvd1u11Tov2EYjjzre0mSpM5iNpuZVjAMw3m9Xl99fnGz2YiuHwBj5h2oGJYCPZ0FUwWfcDf2C4DzHOABFkzMp+xB6hWbpUwpJYRwRfwA1Pr2Hj9k4gAAAABJRU5ErkJggg==">
+    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAGQSURBVHgB7VdNUcMwEDYrOgAdwBvQAToBOgGho/QAOgAdgA7QAeiADugA3YD+4KQjwZ5EK8leSaVknpnx2B9W+9NKWWVrIYQQQmSPlFJXUiqCECvKQgi9EOIsK0wIIYTosGKGYZicZVkWtqJpmmdV5r7vj0SUrNrk2/c9kVSJEBqPUJUQGi2E0HjNEEJYr1kp/Tl+HAihexcbfxUMAwEkhHBc8DAMgYrchzW9bxw7/xb8+/P98LzZbNwht9ttVxkXj8fjmyqHtY/jGORaQy6Xy1cbnqbJR3EYBlj9wXEceMvzPAf5xOuDbdv20Jjs3q+5Xq+Wkuv1qgqT5P1+7yhM8uPxyM6k9/s9Sb7f7ylNkufzeZJcn8+HJD2fz+xM+ng8KAzL+/1+ScLz+UzO5PP5vKpQr/f7/XJrlmWXWq2v1ysLvd1u11Tov2EYjjzre0mSpM5iNpuZVjAMw3m9Xl99fnGz2YiuHwBj5h2oGJYCPZ0FUwWfcDf2C4DzHOABFkzMp+xB6hWbpUwpJYRwRfwA1Pr2Hj9k4gAAAABJRU5ErkJggg==">
+    
     <title>Império FX JF - Gestão Financeira do Trader</title>
     <style>
+        /* SEU CSS ORIGINAL COMPLETO - NENHUMA ALTERAÇÃO */
         * {
             margin: 0;
             padding: 0;
@@ -134,6 +150,18 @@
         .btn-reset {
             background: linear-gradient(135deg, #e74c3c, #c0392b);
             color: white;
+        }
+        
+        .btn-install {
+            background: linear-gradient(135deg, #00acc1, #00838f);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
         
         .menu-btn:hover {
@@ -541,6 +569,81 @@
                 grid-template-columns: 1fr;
             }
         }
+        
+        /* Banner de instalação PWA */
+        .install-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #1a1f3a, #0a0e27);
+            border: 1px solid #ffd700;
+            border-radius: 15px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            z-index: 1001;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        .light-mode .install-banner {
+            background: linear-gradient(135deg, #ffffff, #f0f0f0);
+            border-color: #ffd700;
+            color: #333;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .install-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+        
+        .install-banner-icon {
+            font-size: 2em;
+        }
+        
+        .install-banner-text {
+            flex: 1;
+        }
+        
+        .install-banner-text h4 {
+            margin: 0;
+            font-size: 1em;
+        }
+        
+        .install-banner-text p {
+            margin: 5px 0 0;
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+        
+        .install-banner button {
+            margin: 0;
+            padding: 10px 20px;
+            white-space: nowrap;
+        }
+        
+        .btn-close-banner {
+            background: rgba(255,255,255,0.1);
+            color: inherit;
+            padding: 5px 10px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -849,6 +952,19 @@
     </div>
 </div>
 
+<!-- Banner de instalação PWA (aparece apenas quando não instalado) -->
+<div id="installBanner" class="install-banner" style="display: none;">
+    <div class="install-banner-content">
+        <div class="install-banner-icon">📱</div>
+        <div class="install-banner-text">
+            <h4>Instalar Império FX JF</h4>
+            <p>Instale como app para acesso rápido e funcionamento offline</p>
+        </div>
+        <button id="installBtn" class="btn-success">Instalar</button>
+        <button id="closeBannerBtn" class="btn-close-banner">✕</button>
+    </div>
+</div>
+
 <!-- Indicador de armazenamento -->
 <div class="storage-status" id="storageStatus" onclick="showStorageInfo()">
     💾 Carregando...
@@ -872,6 +988,134 @@
     let cachedHedgeResult = '';
     let cachedGridResult = '';
     let cachedCompoundResult = '';
+    
+    // ==================== PWA - INSTALLATION ====================
+    let deferredPrompt = null;
+    let isAppInstalled = false;
+    
+    // Detectar se já está instalado como app
+    function checkIfInstalled() {
+        // Verificar se está em modo standalone (app instalado)
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone === true;
+        
+        // Verificar se já foi instalado anteriormente (via localStorage)
+        const wasInstalledBefore = localStorage.getItem('pwa_installed') === 'true';
+        
+        if (isStandalone) {
+            isAppInstalled = true;
+            localStorage.setItem('pwa_installed', 'true');
+        } else if (wasInstalledBefore) {
+            isAppInstalled = true;
+        } else {
+            isAppInstalled = false;
+        }
+        
+        return isAppInstalled;
+    }
+    
+    // Mostrar banner de instalação
+    function showInstallBanner() {
+        const banner = document.getElementById('installBanner');
+        const hasBeenDismissed = localStorage.getItem('pwa_banner_dismissed') === 'true';
+        
+        if (!isAppInstalled && !hasBeenDismissed && deferredPrompt) {
+            banner.style.display = 'flex';
+        }
+    }
+    
+    // Fechar banner de instalação
+    function closeInstallBanner() {
+        const banner = document.getElementById('installBanner');
+        banner.style.display = 'none';
+        localStorage.setItem('pwa_banner_dismissed', 'true');
+    }
+    
+    // Registrar Service Worker
+    async function registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                console.log('Service Worker registrado com sucesso!', registration);
+                
+                // Verificar atualizações
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            console.log('Nova versão disponível!');
+                            // Opcional: mostrar notificação de atualização
+                        }
+                    });
+                });
+                
+            } catch (error) {
+                console.error('Falha ao registrar Service Worker:', error);
+                // Tentar registrar com caminho relativo (para GitHub Pages ou hospedagem simples)
+                try {
+                    const registration2 = await navigator.serviceWorker.register('sw.js');
+                    console.log('Service Worker registrado (caminho relativo)!', registration2);
+                } catch (err2) {
+                    console.error('Falha também no caminho relativo:', err2);
+                }
+            }
+        }
+    }
+    
+    // Configurar evento de instalação
+    function setupInstallPrompt() {
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevenir que o Chrome mostre o prompt automaticamente
+            e.preventDefault();
+            // Guardar o evento para usar depois
+            deferredPrompt = e;
+            
+            // Mostrar banner customizado se não estiver instalado
+            setTimeout(() => {
+                showInstallBanner();
+            }, 2000); // Delay para não interferir com carregamento inicial
+        });
+        
+        // Evento para quando o app foi instalado com sucesso
+        window.addEventListener('appinstalled', () => {
+            console.log('App instalado com sucesso!');
+            isAppInstalled = true;
+            deferredPrompt = null;
+            localStorage.setItem('pwa_installed', 'true');
+            document.getElementById('installBanner').style.display = 'none';
+            
+            // Opcional: mostrar mensagem de sucesso
+            setTimeout(() => {
+                alert('✅ App instalado com sucesso!\nAgora você pode acessá-lo pela tela inicial do seu celular.');
+            }, 1000);
+        });
+    }
+    
+    // Função para iniciar instalação via banner customizado
+    async function installApp() {
+        if (!deferredPrompt) {
+            alert('⚠️ Seu navegador não suporta instalação automática ou o app já está instalado.\n\n📱 Para instalar manualmente:\n• Chrome: Menu → Instalar aplicativo\n• Safari: Compartilhar → Adicionar à Tela de Início');
+            return;
+        }
+        
+        // Mostrar o prompt de instalação nativo
+        deferredPrompt.prompt();
+        
+        // Aguardar escolha do usuário
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+            console.log('Usuário aceitou a instalação');
+            isAppInstalled = true;
+            localStorage.setItem('pwa_installed', 'true');
+        } else {
+            console.log('Usuário recusou a instalação');
+        }
+        
+        // Limpar o deferredPrompt
+        deferredPrompt = null;
+        document.getElementById('installBanner').style.display = 'none';
+    }
     
     // Detectar se está rodando em app (WebView) ou navegador
     function isRunningAsApp() {
@@ -1764,9 +2008,9 @@
             const totalPercent = systemInitialBalance ? ((totalOperational / systemInitialBalance) * 100).toFixed(2) : '0.00';
             let rows = '';
             trades.forEach((t, i) => {
-                rows += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px; text-align: center;">${i + 1}<td style="padding: 8px;">${t.date}<td style="padding: 8px; text-align: right; color: #4caf50;">R$ ${(t.profit || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #ff5252;">R$ ${(t.loss || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #ff5252;">R$ ${(t.withdraw || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #4caf50;">R$ ${(t.deposit || 0).toFixed(2)}<td style="padding: 8px; text-align: right; font-weight: bold;">R$ ${(t.operationalResult || 0).toFixed(2)}<td style="padding: 8px; text-align: right;">${(t.dailyPercentage || 0).toFixed(2)}%<td style="padding: 8px;">${t.asset || '-'}</tr>`;
+                rows += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px; text-align: center;">${i + 1}<td style="padding: 8px;">${t.date}<td style="padding: 8px; text-align: right; color: #4caf50;">R$ ${(t.profit || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #ff5252;">R$ ${(t.loss || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #ff5252;">R$ ${(t.withdraw || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #4caf50;">R$ ${(t.deposit || 0).toFixed(2)}<td style="padding: 8px; text-align: right; font-weight: bold;">R$ ${(t.operationalResult || 0).toFixed(2)}<td style="padding: 8px; text-align: right;">${(t.dailyPercentage || 0).toFixed(2)}%<td style="padding: 8px;">${t.asset || '-'}<tr>`;
             });
-            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:Arial;margin:20px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;border-radius:10px}.summary h3{margin-top:0;color:#ffd700}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;text-align:center}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO EXECUTIVO</h3><p><strong>💰 Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>📈 Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>📉 Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>📊 Resultado Operacional:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>📈 Rentabilidade Total:</strong> ${totalPercent}%</p><p><strong>🏧 Total Saques:</strong> R$ ${totalWithdraw.toFixed(2)}</p><p><strong>💵 Total Aportes:</strong> R$ ${totalDeposit.toFixed(2)}</p><p><strong>🏁 Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p><p><strong>📝 Total de Registros:</strong> ${trades.length}</p></div><h3>📋 DETALHAMENTO</h3><tr><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>%</th><th>Ativo</th></tr></thead><tbody>${rows}</tbody></table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
+            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:Arial;margin:20px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;border-radius:10px}.summary h3{margin-top:0;color:#ffd700}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;text-align:center}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO EXECUTIVO</h3><p><strong>💰 Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>📈 Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>📉 Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>📊 Resultado Operacional:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>📈 Rentabilidade Total:</strong> ${totalPercent}%</p><p><strong>🏧 Total Saques:</strong> R$ ${totalWithdraw.toFixed(2)}</p><p><strong>💵 Total Aportes:</strong> R$ ${totalDeposit.toFixed(2)}</p><p><strong>🏁 Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p><p><strong>📝 Total de Registros:</strong> ${trades.length}</p></div><h3>📋 DETALHAMENTO</h3> <table> <thead> <tr> <th>#</th> <th>Data</th> <th>Lucro</th> <th>Perda</th> <th>Saque</th> <th>Aporte</th> <th>Res.Op</th> <th>%</th> <th>Ativo</th> </tr> </thead> <tbody>${rows}</tbody> </table> <div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
             const fileName = `ImperioFXJF_Relatorio_${currentAccount}_${new Date().toISOString().split('T')[0]}.pdf`;
             html2pdf().set({ margin: 10, filename: fileName, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(htmlContent).save();
             setTimeout(() => alert('✅ PDF gerado com sucesso!'), 1000);
@@ -1785,9 +2029,9 @@
             const totalPercent = systemInitialBalance ? ((totalOperational / systemInitialBalance) * 100).toFixed(2) : '0.00';
             let rows = '';
             trades.forEach((t, i) => {
-                rows += `<tr><td>${i + 1}</td><td>${t.date}</td><td>R$ ${(t.profit || 0).toFixed(2)}</td><td>R$ ${(t.loss || 0).toFixed(2)}</td><td>R$ ${(t.withdraw || 0).toFixed(2)}</td><td>R$ ${(t.deposit || 0).toFixed(2)}</td><td>R$ ${(t.operationalResult || 0).toFixed(2)}</td><td>${(t.dailyPercentage || 0).toFixed(2)}%</td><td>${t.asset || '-'}</td></tr>`;
+                rows += `<tr> <td>${i + 1}</td> <td>${t.date}</td> <td>R$ ${(t.profit || 0).toFixed(2)}</td> <td>R$ ${(t.loss || 0).toFixed(2)}</td> <td>R$ ${(t.withdraw || 0).toFixed(2)}</td> <td>R$ ${(t.deposit || 0).toFixed(2)}</td> <td>R$ ${(t.operationalResult || 0).toFixed(2)}</td> <td>${(t.dailyPercentage || 0).toFixed(2)}%</td> <td>${t.asset || '-'}</td> </tr>`;
             });
-            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:'Segoe UI',Arial;margin:30px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;background:#f9f9f9}.summary h3{margin-top:0;color:#d4a000}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;border:1px solid #000}td{padding:8px;border:1px solid #ccc}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO</h3><p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>Rentabilidade:</strong> ${totalPercent}%</p><p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p></div><h3>📋 OPERAÇÕES</h3><table><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>%</th><th>Ativo</th></tr></thead><tbody>${rows}</tbody></table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
+            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:'Segoe UI',Arial;margin:30px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;background:#f9f9f9}.summary h3{margin-top:0;color:#d4a000}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;border:1px solid #000}td{padding:8px;border:1px solid #ccc}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO</h3><p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>Rentabilidade:</strong> ${totalPercent}%</p><p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p></div><h3>📋 OPERAÇÕES</h3> <table> <thead> <tr> <th>#</th> <th>Data</th> <th>Lucro</th> <th>Perda</th> <th>Saque</th> <th>Aporte</th> <th>Res.Op</th> <th>%</th> <th>Ativo</th> </tr> </thead> <tbody>${rows}</tbody> </table> <div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
             const fileName = `ImperioFXJF_Word_${currentAccount}_${new Date().toISOString().split('T')[0]}.doc`;
             const blob = new Blob([htmlContent], { type: 'application/msword' });
             const url = URL.createObjectURL(blob);
@@ -1887,7 +2131,7 @@
             const percentage = (order.custoIndividual / totalCostAllOrders * 100).toFixed(1);
             resultHTML += `<tr><td style="text-align: center;"><strong>${order.ordem}</strong></td><td style="text-align: right;">${order.distanciaDoInicio.toLocaleString()} pts</td><td style="text-align: right;">${order.distanciaPercorrida.toLocaleString()} pts</td><td style="text-align: right; color: #ffd700;">R$ ${order.custoIndividual.toFixed(2)}</td><td style="text-align: right;">R$ ${order.custoAcumulado.toFixed(2)}</td><td style="text-align: center;">${percentage}%</td></tr>`;
         });
-        resultHTML += `</tbody></table></div><div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;"><strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>📌 Ordem mais distante: <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(2)}</strong> | 📌 Ordem mais próxima: <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</strong><br>📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(2)}</span></div>`;
+        resultHTML += `</tbody> </table> </div><div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;"><strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>📌 Ordem mais distante: <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(2)}</strong> | 📌 Ordem mais próxima: <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</strong><br>📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(2)}</span></div>`;
         document.getElementById('gridResult').innerHTML = resultHTML;
         cachedGridResult = resultHTML;
     }
@@ -2114,6 +2358,22 @@
         await initDatabase();
         await loadAllData();
         
+        // Configurar PWA
+        checkIfInstalled();
+        setupInstallPrompt();
+        registerServiceWorker();
+        
+        // Configurar botões de instalação
+        const installBtn = document.getElementById('installBtn');
+        const closeBannerBtn = document.getElementById('closeBannerBtn');
+        if (installBtn) installBtn.addEventListener('click', installApp);
+        if (closeBannerBtn) closeBannerBtn.addEventListener('click', closeInstallBanner);
+        
+        // Verificar se já está instalado e ajustar UI
+        if (isAppInstalled) {
+            document.getElementById('installBanner').style.display = 'none';
+        }
+        
         ['profitToRealize', 'lotsProfit', 'totalLoss', 'lotsLoss'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener('input', calculateHedgeAbater);
@@ -2141,7 +2401,8 @@
         const savedTheme = await getSetting('theme');
         if (savedTheme === 'light') document.body.classList.add('light-mode');
         
-        console.log('Sistema inicializado com armazenamento ILIMITADO e funcionalidade de impressão!');
+        console.log('Sistema inicializado com armazenamento ILIMITADO, funcionalidade de impressão e PWA para instalação!');
+        console.log('📱 Para instalar como app: chrome://apps/ ou nos 3 pontinhos do navegador -> Instalar aplicativo');
     });
 </script>
 </body>

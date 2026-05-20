@@ -790,6 +790,7 @@
                         <th>Aporte</th>
                         <th>Resultado</th>
                         <th>% Operac.</th>
+                        <th>% Sobre Total</th>
                         <th>Lotes</th>
                         <th>Ativo</th>
                         <th>Saldo Final</th>
@@ -955,6 +956,12 @@
             totalOperationalPercentage = (totalOperationalResult / systemInitialBalance) * 100;
         }
         
+        // Calcular porcentagem sobre saldo total atual
+        let percentageOverTotal = 0;
+        if (finalBalance !== 0 && totalOperationalResult !== 0) {
+            percentageOverTotal = (totalOperationalResult / finalBalance) * 100;
+        }
+        
         // Gerar tabela de operações
         let operationsTableHTML = '';
         const sortedTrades = [...trades].sort((a, b) => {
@@ -963,6 +970,9 @@
         });
         
         sortedTrades.forEach((trade, index) => {
+            // Calcular porcentagem sobre saldo total para cada trade (simulada)
+            const percentageOverCurrentTotal = trade.finalDayBalance !== 0 ? (trade.operationalResult / trade.finalDayBalance) * 100 : 0;
+            
             operationsTableHTML += `
                 <tr>
                     <td style="padding: 8px; border: 1px solid #ddd;">${index + 1}</td>
@@ -973,6 +983,7 @@
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">R$ ${(trade.deposit || 0).toFixed(2)}</td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">R$ ${(trade.operationalResult || 0).toFixed(2)}</td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${(trade.dailyPercentage || 0).toFixed(2)}%</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${(trade.percentageOverTotal || percentageOverCurrentTotal).toFixed(2)}%</td>
                     <td style="padding: 8px; border: 1px solid #ddd;">${trade.lots > 0 ? trade.lots : '-'}</td>
                     <td style="padding: 8px; border: 1px solid #ddd;">${trade.asset || '-'}</td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">R$ ${(trade.finalDayBalance || 0).toFixed(2)}</td>
@@ -1126,6 +1137,9 @@
                     <div class="metric-card"><h4>🏁 Saldo Final</h4><div class="value">R$ ${finalBalance.toFixed(2)}</div></div>
                     <div class="metric-card"><h4>📈 Rentabilidade %</h4><div class="value ${totalOperationalPercentage >= 0 ? 'profit-positive' : 'profit-negative'}">${totalOperationalPercentage >= 0 ? '+' : ''}${totalOperationalPercentage.toFixed(2)}%</div></div>
                 </div>
+                <div class="metrics-grid" style="margin-top: 10px;">
+                    <div class="metric-card"><h4>📊 % Sobre Total Atual</h4><div class="value ${percentageOverTotal >= 0 ? 'profit-positive' : 'profit-negative'}">${percentageOverTotal >= 0 ? '+' : ''}${percentageOverTotal.toFixed(2)}%</div></div>
+                </div>
             </div>
             
             <div class="section">
@@ -1146,11 +1160,11 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>%</th><th>Lotes</th><th>Ativo</th><th>Saldo Final</th>
+                                <th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>%</th><th>% Sobre Total</th><th>Lotes</th><th>Ativo</th><th>Saldo Final</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${operationsTableHTML || '<tr><td colspan="11">Nenhum registro encontrado</td></tr>'}
+                            ${operationsTableHTML || '<tr><td colspan="12">Nenhum registro encontrado</td></tr>'}
                         </tbody>
                     </table>
                 </div>
@@ -1562,6 +1576,9 @@
                 } else {
                     dayTrades[j].dailyPercentage = 0;
                 }
+                // CALCULAR PORCENTAGEM SOBRE SALDO TOTAL ATUAL (base no saldo final após aportes)
+                // Para cada operação, calculamos a porcentagem baseada no saldo do momento
+                dayTrades[j].percentageOverTotal = runningBalance !== 0 ? (operationalResult / runningBalance) * 100 : 0;
                 runningBalance = dayTrades[j].partialBalance;
             }
             lastDayFinalBalance = dayTrades[dayTrades.length - 1].partialBalance;
@@ -1671,6 +1688,8 @@
         const operationalResult = profit - loss;
         const externalMovement = deposit - withdraw;
         const totalResult = operationalResult + externalMovement;
+        const percentageOverTotal = initialBalanceForDay !== 0 ? (operationalResult / initialBalanceForDay) * 100 : 0;
+        
         const newTrade = {
             id: Date.now(),
             date: date,
@@ -1687,6 +1706,7 @@
             partialBalance: initialBalanceForDay + totalResult,
             finalDayBalance: initialBalanceForDay + totalResult,
             dailyPercentage: (operationalResult / initialBalanceForDay) * 100,
+            percentageOverTotal: percentageOverTotal,
             timestamp: new Date().toISOString()
         };
         trades.push(newTrade);
@@ -1736,13 +1756,14 @@
                 '💵 Aporte': `R$ ${(t.deposit || 0).toFixed(2)}`,
                 '📊 Resultado Op.': `R$ ${(t.operationalResult || 0).toFixed(2)}`,
                 '📈 % Operacional': `${(t.dailyPercentage || 0).toFixed(2)}%`,
+                '📊 % Sobre Total Atual': `${(t.percentageOverTotal || 0).toFixed(2)}%`,
                 '🎯 Lotes': t.lots || 0,
                 '📊 Ativo': t.asset || '-',
                 '🏁 Saldo Final': `R$ ${(t.finalDayBalance || 0).toFixed(2)}`,
                 '📝 Observação': t.note || ''
             }));
             const worksheet = XLSX.utils.json_to_sheet(data);
-            worksheet['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 18 }, { wch: 14 }, { wch: 10 }, { wch: 15 }, { wch: 16 }, { wch: 30 }];
+            worksheet['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 18 }, { wch: 14 }, { wch: 18 }, { wch: 10 }, { wch: 15 }, { wch: 16 }, { wch: 30 }];
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, `Relatorio_${currentAccount}`);
             const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
@@ -1762,11 +1783,13 @@
             const totalOperational = totalProfit - totalLoss;
             const finalBalance = trades[trades.length - 1].finalDayBalance || systemInitialBalance;
             const totalPercent = systemInitialBalance ? ((totalOperational / systemInitialBalance) * 100).toFixed(2) : '0.00';
+            const totalPercentOverTotal = finalBalance !== 0 ? ((totalOperational / finalBalance) * 100).toFixed(2) : '0.00';
+            
             let rows = '';
             trades.forEach((t, i) => {
-                rows += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px; text-align: center;">${i + 1}<td style="padding: 8px;">${t.date}<td style="padding: 8px; text-align: right; color: #4caf50;">R$ ${(t.profit || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #ff5252;">R$ ${(t.loss || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #ff5252;">R$ ${(t.withdraw || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #4caf50;">R$ ${(t.deposit || 0).toFixed(2)}<td style="padding: 8px; text-align: right; font-weight: bold;">R$ ${(t.operationalResult || 0).toFixed(2)}<td style="padding: 8px; text-align: right;">${(t.dailyPercentage || 0).toFixed(2)}%<td style="padding: 8px;">${t.asset || '-'}</tr>`;
+                rows += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px; text-align: center;">${i + 1}<td style="padding: 8px;">${t.date}<td style="padding: 8px; text-align: right; color: #4caf50;">R$ ${(t.profit || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #ff5252;">R$ ${(t.loss || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #ff5252;">R$ ${(t.withdraw || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #4caf50;">R$ ${(t.deposit || 0).toFixed(2)}<td style="padding: 8px; text-align: right; font-weight: bold;">R$ ${(t.operationalResult || 0).toFixed(2)}<td style="padding: 8px; text-align: right;">${(t.dailyPercentage || 0).toFixed(2)}%<td style="padding: 8px; text-align: right;">${(t.percentageOverTotal || 0).toFixed(2)}%<td style="padding: 8px;">${t.asset || '-'}</td>`;
             });
-            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:Arial;margin:20px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;border-radius:10px}.summary h3{margin-top:0;color:#ffd700}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;text-align:center}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO EXECUTIVO</h3><p><strong>💰 Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>📈 Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>📉 Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>📊 Resultado Operacional:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>📈 Rentabilidade Total:</strong> ${totalPercent}%</p><p><strong>🏧 Total Saques:</strong> R$ ${totalWithdraw.toFixed(2)}</p><p><strong>💵 Total Aportes:</strong> R$ ${totalDeposit.toFixed(2)}</p><p><strong>🏁 Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p><p><strong>📝 Total de Registros:</strong> ${trades.length}</p></div><h3>📋 DETALHAMENTO</h3><tr><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>%</th><th>Ativo</th></tr></thead><tbody>${rows}</tbody></table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
+            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:Arial;margin:20px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;border-radius:10px}.summary h3{margin-top:0;color:#ffd700}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;text-align:center}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO EXECUTIVO</h3><p><strong>💰 Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>📈 Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>📉 Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>📊 Resultado Operacional:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>📈 Rentabilidade (S/Inicial):</strong> ${totalPercent}%</p><p><strong>📈 Rentabilidade (S/Total):</strong> ${totalPercentOverTotal}%</p><p><strong>🏧 Total Saques:</strong> R$ ${totalWithdraw.toFixed(2)}</p><p><strong>💵 Total Aportes:</strong> R$ ${totalDeposit.toFixed(2)}</p><p><strong>🏁 Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p><p><strong>📝 Total de Registros:</strong> ${trades.length}</p></div><h3>📋 DETALHAMENTO</h3><table><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>% Oper.</th><th>% S/Total</th><th>Ativo</th></tr></thead><tbody>${rows}</tbody></table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
             const fileName = `ImperioFXJF_Relatorio_${currentAccount}_${new Date().toISOString().split('T')[0]}.pdf`;
             html2pdf().set({ margin: 10, filename: fileName, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(htmlContent).save();
             setTimeout(() => alert('✅ PDF gerado com sucesso!'), 1000);
@@ -1783,11 +1806,13 @@
             const totalOperational = totalProfit - totalLoss;
             const finalBalance = trades[trades.length - 1].finalDayBalance || systemInitialBalance;
             const totalPercent = systemInitialBalance ? ((totalOperational / systemInitialBalance) * 100).toFixed(2) : '0.00';
+            const totalPercentOverTotal = finalBalance !== 0 ? ((totalOperational / finalBalance) * 100).toFixed(2) : '0.00';
+            
             let rows = '';
             trades.forEach((t, i) => {
-                rows += `<tr><td>${i + 1}</td><td>${t.date}</td><td>R$ ${(t.profit || 0).toFixed(2)}</td><td>R$ ${(t.loss || 0).toFixed(2)}</td><td>R$ ${(t.withdraw || 0).toFixed(2)}</td><td>R$ ${(t.deposit || 0).toFixed(2)}</td><td>R$ ${(t.operationalResult || 0).toFixed(2)}</td><td>${(t.dailyPercentage || 0).toFixed(2)}%</td><td>${t.asset || '-'}</td></tr>`;
+                rows += `<tr><td>${i + 1}<td>${t.date}<td>R$ ${(t.profit || 0).toFixed(2)}<td>R$ ${(t.loss || 0).toFixed(2)}<td>R$ ${(t.withdraw || 0).toFixed(2)}<td>R$ ${(t.deposit || 0).toFixed(2)}<td>R$ ${(t.operationalResult || 0).toFixed(2)}<td>${(t.dailyPercentage || 0).toFixed(2)}%<td>${(t.percentageOverTotal || 0).toFixed(2)}%<td>${t.asset || '-'}</tr>`;
             });
-            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:'Segoe UI',Arial;margin:30px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;background:#f9f9f9}.summary h3{margin-top:0;color:#d4a000}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;border:1px solid #000}td{padding:8px;border:1px solid #ccc}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO</h3><p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>Rentabilidade:</strong> ${totalPercent}%</p><p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p></div><h3>📋 OPERAÇÕES</h3><table><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>%</th><th>Ativo</th></tr></thead><tbody>${rows}</tbody></table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
+            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:'Segoe UI',Arial;margin:30px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;background:#f9f9f9}.summary h3{margin-top:0;color:#d4a000}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;border:1px solid #000}td{padding:8px;border:1px solid #ccc}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO</h3><p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>Rentabilidade (S/Inicial):</strong> ${totalPercent}%</p><p><strong>Rentabilidade (S/Total):</strong> ${totalPercentOverTotal}%</p><p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p></div><h3>📋 OPERAÇÕES</h3><td><thead><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>% Op.</th><th>% S/Total</th><th>Ativo</th></thead><tbody>${rows}</tbody></table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
             const fileName = `ImperioFXJF_Word_${currentAccount}_${new Date().toISOString().split('T')[0]}.doc`;
             const blob = new Blob([htmlContent], { type: 'application/msword' });
             const url = URL.createObjectURL(blob);
@@ -1885,9 +1910,9 @@
         let resultHTML = `<strong>📊 RESULTADO DO GRID PROGRESSIVO</strong><br><br><div class="grid-lotes-destaque">📈 ${numberOfOrders} ORDENS NO TOTAL</div><div>🔹 Ordem mais distante (posição 0): ${lotSize} lote(s)</div><div>🔹 Distanciamento: ${distancePoints.toLocaleString()} pontos entre ordens</div><div>🔹 Cobertura total: ${totalDistance.toLocaleString()} pontos</div><hr style="margin: 10px 0; border-color: #3a3f5e;"><div><strong>💰 Valor por ponto:</strong> R$ ${pointValue.toFixed(6)}</div><div><strong>💰 Custo da ordem mais distante:</strong> R$ ${maxOrderCost.toFixed(2)}</div><div><strong>📊 Custo da ordem mais próxima:</strong> R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</div><hr style="margin: 10px 0; border-color: #3a3f5e;"><div><strong>💰 Custo TOTAL:</strong> <span class="profit-positive" style="font-size: 1.3em;">R$ ${totalCostAllOrders.toFixed(2)}</span></div><div><strong>📊 Custo médio por ordem:</strong> R$ ${(totalCostAllOrders / numberOfOrders).toFixed(2)}</div><hr style="margin: 15px 0; border-color: #3a3f5e;"><div style="text-align: left;"><strong>📋 DETALHAMENTO ORDEM POR ORDEM:</strong></div><div style="text-align: left; max-height: 350px; overflow-y: auto; margin-top: 10px;"><table class="grid-info-table" style="width: 100%; font-size: 0.85em;"><thead><tr style="background: rgba(255,215,0,0.2);"><th># Ordem</th><th>Distância do Início</th><th>Distância Percorrida</th><th>Custo Individual</th><th>Custo Acumulado</th><th>% do Total</th></tr></thead><tbody>`;
         ordersWithAccumulated.forEach((order, idx) => {
             const percentage = (order.custoIndividual / totalCostAllOrders * 100).toFixed(1);
-            resultHTML += `<tr><td style="text-align: center;"><strong>${order.ordem}</strong></td><td style="text-align: right;">${order.distanciaDoInicio.toLocaleString()} pts</td><td style="text-align: right;">${order.distanciaPercorrida.toLocaleString()} pts</td><td style="text-align: right; color: #ffd700;">R$ ${order.custoIndividual.toFixed(2)}</td><td style="text-align: right;">R$ ${order.custoAcumulado.toFixed(2)}</td><td style="text-align: center;">${percentage}%</td></tr>`;
+            resultHTML += `<tr><td style="text-align: center;"><strong>${order.ordem}</strong><td style="text-align: right;">${order.distanciaDoInicio.toLocaleString()} pts<td style="text-align: right;">${order.distanciaPercorrida.toLocaleString()} pts<td style="text-align: right; color: #ffd700;">R$ ${order.custoIndividual.toFixed(2)}<td style="text-align: right;">R$ ${order.custoAcumulado.toFixed(2)}<td style="text-align: center;">${percentage}%</tr>`;
         });
-        resultHTML += `</tbody></table></div><div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;"><strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>📌 Ordem mais distante: <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(2)}</strong> | 📌 Ordem mais próxima: <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</strong><br>📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(2)}</span></div>`;
+        resultHTML += `</tbody>}</div><div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;"><strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>📌 Ordem mais distante: <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(2)}</strong> | 📌 Ordem mais próxima: <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</strong><br>📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(2)}</span></div>`;
         document.getElementById('gridResult').innerHTML = resultHTML;
         cachedGridResult = resultHTML;
     }
@@ -1952,7 +1977,13 @@
         const finalBalance = trades.length > 0 ? trades[trades.length - 1].finalDayBalance : systemInitialBalance;
         let totalOperationalPercentage = 0;
         if (systemInitialBalance !== 0) totalOperationalPercentage = (totalOperationalResult / systemInitialBalance) * 100;
-        document.getElementById('mainMetrics').innerHTML = `<div class="metric-card"><h4>💰 Saldo Inicial</h4><div class="value">R$ ${systemInitialBalance.toFixed(2)}</div></div><div class="metric-card"><h4>📈 Lucro Total</h4><div class="value profit-positive">R$ ${totalProfit.toFixed(2)}</div></div><div class="metric-card"><h4>📉 Perda Total</h4><div class="value profit-negative">R$ ${totalLoss.toFixed(2)}</div></div><div class="metric-card"><h4>🏧 Total Saques</h4><div class="value withdraw-negative">R$ ${totalWithdraw.toFixed(2)}</div></div><div class="metric-card"><h4>💰 Total Aportes</h4><div class="value deposit-positive">R$ ${totalDeposit.toFixed(2)}</div></div><div class="metric-card"><h4>📊 Resultado Operac.</h4><div class="value ${totalOperationalResult >= 0 ? 'profit-positive' : 'profit-negative'}">${totalOperationalResult >= 0 ? '+' : ''}R$ ${totalOperationalResult.toFixed(2)}</div></div><div class="metric-card"><h4>🏁 Saldo Final</h4><div class="value">R$ ${finalBalance.toFixed(2)}</div></div><div class="metric-card"><h4>📈 Rentabilidade %</h4><div class="value ${totalOperationalPercentage >= 0 ? 'profit-positive' : 'profit-negative'}">${totalOperationalPercentage >= 0 ? '+' : ''}${totalOperationalPercentage.toFixed(2)}%</div></div>`;
+        
+        let totalPercentageOverTotal = 0;
+        if (finalBalance !== 0 && totalOperationalResult !== 0) {
+            totalPercentageOverTotal = (totalOperationalResult / finalBalance) * 100;
+        }
+        
+        document.getElementById('mainMetrics').innerHTML = `<div class="metric-card"><h4>💰 Saldo Inicial</h4><div class="value">R$ ${systemInitialBalance.toFixed(2)}</div></div><div class="metric-card"><h4>📈 Lucro Total</h4><div class="value profit-positive">R$ ${totalProfit.toFixed(2)}</div></div><div class="metric-card"><h4>📉 Perda Total</h4><div class="value profit-negative">R$ ${totalLoss.toFixed(2)}</div></div><div class="metric-card"><h4>🏧 Total Saques</h4><div class="value withdraw-negative">R$ ${totalWithdraw.toFixed(2)}</div></div><div class="metric-card"><h4>💰 Total Aportes</h4><div class="value deposit-positive">R$ ${totalDeposit.toFixed(2)}</div></div><div class="metric-card"><h4>📊 Resultado Op.</h4><div class="value ${totalOperationalResult >= 0 ? 'profit-positive' : 'profit-negative'}">${totalOperationalResult >= 0 ? '+' : ''}R$ ${totalOperationalResult.toFixed(2)}</div></div><div class="metric-card"><h4>🏁 Saldo Final</h4><div class="value">R$ ${finalBalance.toFixed(2)}</div></div><div class="metric-card"><h4>📈 Rentabilidade %</h4><div class="value ${totalOperationalPercentage >= 0 ? 'profit-positive' : 'profit-negative'}">${totalOperationalPercentage >= 0 ? '+' : ''}${totalOperationalPercentage.toFixed(2)}%</div></div><div class="metric-card"><h4>📊 % Sobre Total</h4><div class="value ${totalPercentageOverTotal >= 0 ? 'profit-positive' : 'profit-negative'}">${totalPercentageOverTotal >= 0 ? '+' : ''}${totalPercentageOverTotal.toFixed(2)}%</div></div>`;
     }
     
     function updatePercentageCards() {
@@ -1971,6 +2002,14 @@
         const totalOperationalResult = trades.reduce((sum, t) => sum + (t.operationalResult || 0), 0);
         let totalOperationalPercentage = 0;
         if (systemInitialBalance !== 0) totalOperationalPercentage = (totalOperationalResult / systemInitialBalance) * 100;
+        
+        // Calcular porcentagem sobre saldo total atual
+        const finalBalance = trades[trades.length - 1].finalDayBalance;
+        let totalPercentageOverTotal = 0;
+        if (finalBalance !== 0 && totalOperationalResult !== 0) {
+            totalPercentageOverTotal = (totalOperationalResult / finalBalance) * 100;
+        }
+        
         const validPercentages = trades.filter(t => !isNaN(t.dailyPercentage) && isFinite(t.dailyPercentage)).map(t => t.dailyPercentage);
         const avgPercentage = validPercentages.length > 0 ? validPercentages.reduce((a,b) => a+b, 0) / validPercentages.length : 0;
         const maxPositive = Math.max(...validPercentages, 0);
@@ -1979,7 +2018,8 @@
         const totalWithdrawsValue = trades.reduce((sum, t) => sum + (t.withdraw || 0), 0);
         const totalDepositsCount = trades.filter(t => (t.deposit || 0) > 0).length;
         const totalWithdrawsCount = trades.filter(t => (t.withdraw || 0) > 0).length;
-        document.getElementById('percentageCards').innerHTML = `<div class="card"><div class="card-title">📊 RENTABILIDADE DO DIA</div><div style="text-align: center; padding: 20px;"><div style="font-size: 3em; font-weight: bold; ${todayOperationalResult >= 0 ? 'color: #4caf50' : 'color: #ff5252'}">${todayOperationalPercentage >= 0 ? '+' : ''}${todayOperationalPercentage.toFixed(2)}%</div><div style="margin-top: 10px;">Resultado operacional: ${todayOperationalResult >= 0 ? '+' : ''}R$ ${todayOperationalResult.toFixed(2)}</div><div style="font-size: 0.9em; color: #aaa;">${todayTrades.length} registro(s) hoje</div><small style="color: #aaa;">* Porcentagem baseada APENAS em lucro/perda</small></div></div><div class="card"><div class="card-title">📈 RENTABILIDADE TOTAL</div><div style="text-align: center; padding: 20px;"><div style="font-size: 3em; font-weight: bold; ${totalOperationalPercentage >= 0 ? 'color: #4caf50' : 'color: #ff5252'}">${totalOperationalPercentage >= 0 ? '+' : ''}${totalOperationalPercentage.toFixed(2)}%</div><div style="margin-top: 10px;">Lucro/perda acumulado: ${totalOperationalResult >= 0 ? '+' : ''}R$ ${totalOperationalResult.toFixed(2)}</div><div style="font-size: 0.9em; color: #aaa;">Base: Saldo Inicial R$ ${systemInitialBalance.toFixed(2)}</div></div></div><div class="card"><div class="card-title">📊 MÉDIAS E EXTREMOS</div><div style="padding: 10px;"><div><strong>📈 Média % por operação:</strong> <span class="${avgPercentage >= 0 ? 'profit-positive' : 'profit-negative'}">${avgPercentage >= 0 ? '+' : ''}${avgPercentage.toFixed(2)}%</span></div><div><strong>🏆 Maior ganho %:</strong> <span class="profit-positive">+${maxPositive.toFixed(2)}%</span></div><div><strong>💔 Maior perda %:</strong> <span class="profit-negative">${maxNegative.toFixed(2)}%</span></div><div><strong>📊 Total de registros:</strong> ${trades.length}</div><div><strong>✅ Operações positivas:</strong> ${trades.filter(t => (t.operationalResult || 0) > 0).length}</div><div><strong>❌ Operações negativas:</strong> ${trades.filter(t => (t.operationalResult || 0) < 0).length}</div><div><strong>🎯 Taxa de acerto:</strong> ${((trades.filter(t => (t.operationalResult || 0) > 0).length / trades.filter(t => t.profit !== 0 || t.loss !== 0).length || 0) * 100).toFixed(1)}%</div><hr style="margin: 10px 0; border-color: #3a3f5e;"><div><strong>💰 Total de Aportes:</strong> ${totalDepositsCount} vez(es) | <span class="deposit-positive">R$ ${totalDepositsValue.toFixed(2)}</span></div><div><strong>🏧 Total de Saques:</strong> ${totalWithdrawsCount} vez(es) | <span class="withdraw-negative">R$ ${totalWithdrawsValue.toFixed(2)}</span></div></div></div>`;
+        
+        document.getElementById('percentageCards').innerHTML = `<div class="card"><div class="card-title">📊 RENTABILIDADE DO DIA</div><div style="text-align: center; padding: 20px;"><div style="font-size: 3em; font-weight: bold; ${todayOperationalResult >= 0 ? 'color: #4caf50' : 'color: #ff5252'}">${todayOperationalPercentage >= 0 ? '+' : ''}${todayOperationalPercentage.toFixed(2)}%</div><div style="margin-top: 10px;">Resultado operacional: ${todayOperationalResult >= 0 ? '+' : ''}R$ ${todayOperationalResult.toFixed(2)}</div><div style="font-size: 0.9em; color: #aaa;">${todayTrades.length} registro(s) hoje</div><small style="color: #aaa;">* Porcentagem baseada APENAS em lucro/perda</small></div></div><div class="card"><div class="card-title">📈 RENTABILIDADE TOTAL</div><div style="text-align: center; padding: 20px;"><div style="font-size: 3em; font-weight: bold; ${totalOperationalPercentage >= 0 ? 'color: #4caf50' : 'color: #ff5252'}">${totalOperationalPercentage >= 0 ? '+' : ''}${totalOperationalPercentage.toFixed(2)}%</div><div style="margin-top: 10px;">Lucro/perda acumulado: ${totalOperationalResult >= 0 ? '+' : ''}R$ ${totalOperationalResult.toFixed(2)}</div><div style="font-size: 0.9em; color: #aaa;">Base: Saldo Inicial R$ ${systemInitialBalance.toFixed(2)}</div></div></div><div class="card"><div class="card-title">📊 % SOBRE SALDO TOTAL</div><div style="text-align: center; padding: 20px;"><div style="font-size: 3em; font-weight: bold; ${totalPercentageOverTotal >= 0 ? 'color: #4caf50' : 'color: #ff5252'}">${totalPercentageOverTotal >= 0 ? '+' : ''}${totalPercentageOverTotal.toFixed(2)}%</div><div style="margin-top: 10px;">Rentabilidade baseada no saldo atual</div><div style="font-size: 0.9em; color: #aaa;">Saldo final: R$ ${finalBalance.toFixed(2)}</div><small style="color: #aaa;">* Atualizada após aportes</small></div></div></div><div class="grid-3" id="extraPercentageCards"><div class="card"><div class="card-title">📊 MÉDIAS E EXTREMOS</div><div style="padding: 10px;"><div><strong>📈 Média % por operação:</strong> <span class="${avgPercentage >= 0 ? 'profit-positive' : 'profit-negative'}">${avgPercentage >= 0 ? '+' : ''}${avgPercentage.toFixed(2)}%</span></div><div><strong>🏆 Maior ganho %:</strong> <span class="profit-positive">+${maxPositive.toFixed(2)}%</span></div><div><strong>💔 Maior perda %:</strong> <span class="profit-negative">${maxNegative.toFixed(2)}%</span></div><div><strong>📊 Total de registros:</strong> ${trades.length}</div><div><strong>✅ Operações positivas:</strong> ${trades.filter(t => (t.operationalResult || 0) > 0).length}</div><div><strong>❌ Operações negativas:</strong> ${trades.filter(t => (t.operationalResult || 0) < 0).length}</div><div><strong>🎯 Taxa de acerto:</strong> ${((trades.filter(t => (t.operationalResult || 0) > 0).length / trades.filter(t => t.profit !== 0 || t.loss !== 0).length || 0) * 100).toFixed(1)}%</div><hr style="margin: 10px 0; border-color: #3a3f5e;"><div><strong>💰 Total de Aportes:</strong> ${totalDepositsCount} vez(es) | <span class="deposit-positive">R$ ${totalDepositsValue.toFixed(2)}</span></div><div><strong>🏧 Total de Saques:</strong> ${totalWithdrawsCount} vez(es) | <span class="withdraw-negative">R$ ${totalWithdrawsValue.toFixed(2)}</span></div></div></div></div>`;
     }
     
     function updateDailyOperations() {
@@ -1990,13 +2030,13 @@
         container.innerHTML = '';
         todayTrades.forEach((trade, idx) => {
             const resultClass = (trade.operationalResult || 0) >= 0 ? 'profit-positive' : 'profit-negative';
-            container.innerHTML += `<div class="operation-item"><span>#${idx + 1}</span>${trade.profit > 0 ? `<span>💰 Lucro: R$ ${trade.profit.toFixed(2)}</span>` : ''}${trade.loss > 0 ? `<span>📉 Perda: R$ ${trade.loss.toFixed(2)}</span>` : ''}${trade.withdraw > 0 ? `<span>🏧 Saque: R$ ${trade.withdraw.toFixed(2)}</span>` : ''}${trade.deposit > 0 ? `<span>💰 Aporte: R$ ${trade.deposit.toFixed(2)}</span>` : ''}<span class="${resultClass}">📊 Resultado Op.: ${(trade.operationalResult || 0) >= 0 ? '+' : ''}R$ ${(trade.operationalResult || 0).toFixed(2)}</span><span class="${resultClass}">📈 %: ${(trade.dailyPercentage || 0) >= 0 ? '+' : ''}${(trade.dailyPercentage || 0).toFixed(2)}%</span>${trade.lots > 0 ? `<span>🎯 ${trade.lots} l</span>` : ''}</div>`;
+            container.innerHTML += `<div class="operation-item"><span>#${idx + 1}</span>${trade.profit > 0 ? `<span>💰 Lucro: R$ ${trade.profit.toFixed(2)}</span>` : ''}${trade.loss > 0 ? `<span>📉 Perda: R$ ${trade.loss.toFixed(2)}</span>` : ''}${trade.withdraw > 0 ? `<span>🏧 Saque: R$ ${trade.withdraw.toFixed(2)}</span>` : ''}${trade.deposit > 0 ? `<span>💰 Aporte: R$ ${trade.deposit.toFixed(2)}</span>` : ''}<span class="${resultClass}">📊 Resultado Op.: ${(trade.operationalResult || 0) >= 0 ? '+' : ''}R$ ${(trade.operationalResult || 0).toFixed(2)}</span><span class="${resultClass}">📈 %: ${(trade.dailyPercentage || 0) >= 0 ? '+' : ''}${(trade.dailyPercentage || 0).toFixed(2)}%</span><span class="${resultClass}">📊 %S/Total: ${(trade.percentageOverTotal || 0) >= 0 ? '+' : ''}${(trade.percentageOverTotal || 0).toFixed(2)}%</span>${trade.lots > 0 ? `<span>🎯 ${trade.lots} l</span>` : ''}</div>`;
         });
     }
     
     function updateTradesTable() {
         const tbody = document.getElementById('tradesBody');
-        if (trades.length === 0) { tbody.innerHTML = '<tr><td colspan="12">Nenhum registro ainda</td></tr>'; return; }
+        if (trades.length === 0) { tbody.innerHTML = '<td><td colspan="13">Nenhum registro ainda</tr>'; return; }
         const sorted = [...trades].sort((a, b) => {
             if (a.date !== b.date) return new Date(a.date) - new Date(b.date);
             return new Date(a.timestamp) - new Date(b.timestamp);
@@ -2005,7 +2045,7 @@
         sorted.forEach(trade => {
             const resultClass = (trade.operationalResult || 0) >= 0 ? 'profit-positive' : 'profit-negative';
             const row = tbody.insertRow();
-            row.innerHTML = `<td>${trade.date}</td><td>R$ ${trade.initialBalance.toFixed(2)}</td><td class="profit-positive">R$ ${(trade.profit || 0).toFixed(2)}</td><td class="profit-negative">R$ ${(trade.loss || 0).toFixed(2)}</td><td class="withdraw-negative">R$ ${(trade.withdraw || 0).toFixed(2)}</td><td class="deposit-positive">R$ ${(trade.deposit || 0).toFixed(2)}</td><td class="${resultClass}">${(trade.operationalResult || 0) >= 0 ? '+' : ''}R$ ${(trade.operationalResult || 0).toFixed(2)}</td><td class="${resultClass}">${(trade.dailyPercentage || 0) >= 0 ? '+' : ''}${(trade.dailyPercentage || 0).toFixed(2)}%</td><td>${trade.lots > 0 ? trade.lots : '-'}</td><td>${trade.asset}</td><td>R$ ${trade.finalDayBalance.toFixed(2)}</td><td><button onclick="deleteTrade('${trade.id}')" class="btn-danger">🗑️</button></td>`;
+            row.innerHTML = `<td>${trade.date}</td><td class="info-number">R$ ${trade.initialBalance.toFixed(2)}</td><td class="profit-positive">R$ ${(trade.profit || 0).toFixed(2)}</td><td class="profit-negative">R$ ${(trade.loss || 0).toFixed(2)}</td><td class="withdraw-negative">R$ ${(trade.withdraw || 0).toFixed(2)}</td><td class="deposit-positive">R$ ${(trade.deposit || 0).toFixed(2)}</td><td class="${resultClass}">${(trade.operationalResult || 0) >= 0 ? '+' : ''}R$ ${(trade.operationalResult || 0).toFixed(2)}</td><td class="${resultClass}">${(trade.dailyPercentage || 0) >= 0 ? '+' : ''}${(trade.dailyPercentage || 0).toFixed(2)}%</td><td class="${resultClass}">${(trade.percentageOverTotal || 0) >= 0 ? '+' : ''}${(trade.percentageOverTotal || 0).toFixed(2)}%</td><td>${trade.lots > 0 ? trade.lots : '-'}</td><td>${trade.asset}</td><td class="info-number">R$ ${trade.finalDayBalance.toFixed(2)}</td><td><button onclick="deleteTrade('${trade.id}')" class="btn-danger">🗑️</button></td>`;
         });
     }
     

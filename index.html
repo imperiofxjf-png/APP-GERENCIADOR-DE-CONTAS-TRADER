@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="theme-color" content="#1a1f3a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Império FX JF">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3a'/%3E%3Ctext x='50' y='67' font-size='50' text-anchor='middle' fill='%23ffd700' font-weight='bold'%3E💰%3C/text%3E%3C/svg%3E">
     <title>Império FX JF - Gestão Financeira do Trader</title>
     <style>
         * {
@@ -99,6 +104,16 @@
         .btn-theme {
             background: linear-gradient(135deg, #6c63ff, #3f3a91);
             color: white;
+        }
+        
+        .btn-install {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+            color: white;
+        }
+        
+        .btn-install.installed {
+            background: linear-gradient(135deg, #6c757d, #5a6268);
+            opacity: 0.7;
         }
         
         .btn-excel {
@@ -563,6 +578,9 @@
                 <button onclick="toggleTheme()" class="menu-btn btn-theme" title="Alternar tema">
                     <span>🌓</span> <span>Modo</span>
                 </button>
+                <button id="installBtn" onclick="installApp()" class="menu-btn btn-install" title="Instalar como aplicativo nativo">
+                    <span>📲</span> <span>Instalar App</span>
+                </button>
             </div>
             
             <div class="menu-group">
@@ -868,11 +886,124 @@
     let monthlyChart = null;
     let assetsChart = null;
     let isInitialized = false;
+    let deferredPrompt = null; // Para armazenar o evento de instalação do PWA
     
     // Cache dos resultados das calculadoras para impressão
     let cachedHedgeResult = '';
     let cachedGridResult = '';
     let cachedCompoundResult = '';
+    
+    // ==================== FUNÇÕES DE INSTALAÇÃO NATIVA (PWA) ====================
+    
+    // Detectar se já está instalado como app
+    function isAppInstalled() {
+        // Verifica se está em modo standalone (PWA instalado)
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone === true;
+        
+        // Verifica se está em WebView de APK
+        const userAgent = navigator.userAgent.toLowerCase();
+        const isWebView = (userAgent.includes('wv') || userAgent.includes('webview'));
+        
+        // Verifica se tem flag de instalação salva
+        const manuallyInstalled = localStorage.getItem('app_installed_flag') === 'true';
+        
+        return isStandalone || isWebView || manuallyInstalled;
+    }
+    
+    // Atualizar aparência do botão de instalação
+    function updateInstallButton() {
+        const installBtn = document.getElementById('installBtn');
+        if (!installBtn) return;
+        
+        if (isAppInstalled()) {
+            installBtn.innerHTML = '<span>✅</span> <span>App Instalado</span>';
+            installBtn.classList.add('installed');
+            installBtn.title = 'Aplicativo já instalado no seu dispositivo';
+        } else {
+            installBtn.innerHTML = '<span>📲</span> <span>Instalar App</span>';
+            installBtn.classList.remove('installed');
+            installBtn.title = 'Instalar como aplicativo nativo no seu dispositivo';
+        }
+    }
+    
+    // Função principal de instalação
+    async function installApp() {
+        // Se já estiver instalado, apenas informar
+        if (isAppInstalled()) {
+            alert('✅ O aplicativo já está instalado no seu dispositivo!\n\n📱 Você pode acessá-lo pela tela inicial do seu celular.');
+            return;
+        }
+        
+        // Método 1: Usar o evento beforeinstallprompt (PWA padrão)
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to install prompt: ${outcome}`);
+            
+            if (outcome === 'accepted') {
+                localStorage.setItem('app_installed_flag', 'true');
+                updateInstallButton();
+                alert('🎉 Parabéns! O app foi instalado com sucesso!\n\n📱 Agora você pode acessá-lo pela tela inicial do seu dispositivo.');
+            } else {
+                alert('ℹ️ Você pode instalar o app manualmente:\n\n• Android: Menu do Chrome → "Instalar aplicativo"\n• iPhone: Compartilhar → "Adicionar à Tela de Início"');
+            }
+            deferredPrompt = null;
+            return;
+        }
+        
+        // Método 2: Para navegadores que não suportam beforeinstallprompt ou para WebViews
+        // Mostrar instruções manuais
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+        
+        let instructions = '';
+        if (isIOS) {
+            instructions = '📱 Para instalar no iPhone/iPad:\n\n1. Toque no botão Compartilhar 📤\n2. Role para baixo e toque em "Adicionar à Tela de Início"\n3. Toque em "Adicionar" no canto superior direito';
+        } else if (isAndroid) {
+            instructions = '📱 Para instalar no Android:\n\n1. Toque no menu do navegador (3 pontos)\n2. Toque em "Instalar aplicativo"\n3. Confirme a instalação';
+        } else {
+            instructions = '💻 Para instalar no computador:\n\n• Chrome/Edge: Clique no ícone de instalação na barra de endereço\n• Ou vá ao menu do navegador e clique em "Instalar aplicativo"';
+        }
+        
+        alert(`📲 Instalação Nativa\n\n${instructions}\n\n✨ Após instalar, o app funcionará offline e terá acesso a mais recursos do seu dispositivo!`);
+    }
+    
+    // Capturar evento de instalação do navegador
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('beforeinstallprompt event captured');
+        updateInstallButton();
+    });
+    
+    // Detectar quando o app foi instalado com sucesso
+    window.addEventListener('appinstalled', () => {
+        console.log('App installed successfully');
+        localStorage.setItem('app_installed_flag', 'true');
+        deferredPrompt = null;
+        updateInstallButton();
+    });
+    
+    // Verificar instalação ao carregar a página
+    document.addEventListener('DOMContentLoaded', () => {
+        updateInstallButton();
+        
+        // Para WebViews de APK, marcar como instalado automaticamente
+        const userAgent = navigator.userAgent.toLowerCase();
+        if (userAgent.includes('wv') || userAgent.includes('webview')) {
+            localStorage.setItem('app_installed_flag', 'true');
+            updateInstallButton();
+        }
+    });
+    
+    // Detectar mudanças no modo de exibição (quando o PWA é aberto standalone)
+    window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
+        if (e.matches) {
+            localStorage.setItem('app_installed_flag', 'true');
+            updateInstallButton();
+        }
+    });
     
     // Detectar se está rodando em app (WebView) ou navegador
     function isRunningAsApp() {
@@ -1789,7 +1920,7 @@
             trades.forEach((t, i) => {
                 rows += `<tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px; text-align: center;">${i + 1}<td style="padding: 8px;">${t.date}<td style="padding: 8px; text-align: right; color: #4caf50;">R$ ${(t.profit || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #ff5252;">R$ ${(t.loss || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #ff5252;">R$ ${(t.withdraw || 0).toFixed(2)}<td style="padding: 8px; text-align: right; color: #4caf50;">R$ ${(t.deposit || 0).toFixed(2)}<td style="padding: 8px; text-align: right; font-weight: bold;">R$ ${(t.operationalResult || 0).toFixed(2)}<td style="padding: 8px; text-align: right;">${(t.dailyPercentage || 0).toFixed(2)}%<td style="padding: 8px; text-align: right;">${(t.percentageOverTotal || 0).toFixed(2)}%<td style="padding: 8px;">${t.asset || '-'}</td>`;
             });
-            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:Arial;margin:20px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;border-radius:10px}.summary h3{margin-top:0;color:#ffd700}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;text-align:center}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO EXECUTIVO</h3><p><strong>💰 Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>📈 Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>📉 Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>📊 Resultado Operacional:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>📈 Rentabilidade (S/Inicial):</strong> ${totalPercent}%</p><p><strong>📈 Rentabilidade (S/Total):</strong> ${totalPercentOverTotal}%</p><p><strong>🏧 Total Saques:</strong> R$ ${totalWithdraw.toFixed(2)}</p><p><strong>💵 Total Aportes:</strong> R$ ${totalDeposit.toFixed(2)}</p><p><strong>🏁 Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p><p><strong>📝 Total de Registros:</strong> ${trades.length}</p></div><h3>📋 DETALHAMENTO</h3><table><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>% Oper.</th><th>% S/Total</th><th>Ativo</th></tr></thead><tbody>${rows}</tbody></table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
+            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:Arial;margin:20px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;border-radius:10px}.summary h3{margin-top:0;color:#ffd700}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;text-align:center}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO EXECUTIVO</h3><p><strong>💰 Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>📈 Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>📉 Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>📊 Resultado Operacional:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>📈 Rentabilidade (S/Inicial):</strong> ${totalPercent}%</p><p><strong>📈 Rentabilidade (S/Total):</strong> ${totalPercentOverTotal}%</p><p><strong>🏧 Total Saques:</strong> R$ ${totalWithdraw.toFixed(2)}</p><p><strong>💵 Total Aportes:</strong> R$ ${totalDeposit.toFixed(2)}</p><p><strong>🏁 Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p><p><strong>📝 Total de Registros:</strong> ${trades.length}</p></div><h3>📋 DETALHAMENTO</h3></table><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>% Oper.</th><th>% S/Total</th><th>Ativo</th></tr></thead><tbody>${rows}</tbody>}</div><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
             const fileName = `ImperioFXJF_Relatorio_${currentAccount}_${new Date().toISOString().split('T')[0]}.pdf`;
             html2pdf().set({ margin: 10, filename: fileName, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(htmlContent).save();
             setTimeout(() => alert('✅ PDF gerado com sucesso!'), 1000);
@@ -1810,9 +1941,9 @@
             
             let rows = '';
             trades.forEach((t, i) => {
-                rows += `<tr><td>${i + 1}<td>${t.date}<td>R$ ${(t.profit || 0).toFixed(2)}<td>R$ ${(t.loss || 0).toFixed(2)}<td>R$ ${(t.withdraw || 0).toFixed(2)}<td>R$ ${(t.deposit || 0).toFixed(2)}<td>R$ ${(t.operationalResult || 0).toFixed(2)}<td>${(t.dailyPercentage || 0).toFixed(2)}%<td>${(t.percentageOverTotal || 0).toFixed(2)}%<td>${t.asset || '-'}</tr>`;
+                rows += `<tr><td>${i + 1}</td><td>${t.date}</td><td>R$ ${(t.profit || 0).toFixed(2)}</td><td>R$ ${(t.loss || 0).toFixed(2)}</td><td>R$ ${(t.withdraw || 0).toFixed(2)}</td><td>R$ ${(t.deposit || 0).toFixed(2)}</td><td>R$ ${(t.operationalResult || 0).toFixed(2)}</td><td>${(t.dailyPercentage || 0).toFixed(2)}%</td><td>${(t.percentageOverTotal || 0).toFixed(2)}%</td><td>${t.asset || '-'}</td></tr>`;
             });
-            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:'Segoe UI',Arial;margin:30px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;background:#f9f9f9}.summary h3{margin-top:0;color:#d4a000}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;border:1px solid #000}td{padding:8px;border:1px solid #ccc}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO</h3><p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>Rentabilidade (S/Inicial):</strong> ${totalPercent}%</p><p><strong>Rentabilidade (S/Total):</strong> ${totalPercentOverTotal}%</p><p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p></div><h3>📋 OPERAÇÕES</h3><td><thead><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>% Op.</th><th>% S/Total</th><th>Ativo</th></thead><tbody>${rows}</tbody></table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
+            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:'Segoe UI',Arial;margin:30px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;background:#f9f9f9}.summary h3{margin-top:0;color:#d4a000}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;border:1px solid #000}td{padding:8px;border:1px solid #ccc}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO</h3><p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>Rentabilidade (S/Inicial):</strong> ${totalPercent}%</p><p><strong>Rentabilidade (S/Total):</strong> ${totalPercentOverTotal}%</p><p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p></div><h3>📋 OPERAÇÕES</h3> <table><thead><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>% Op.</th><th>% S/Total</th><th>Ativo</th></thead><tbody>${rows}</tbody> </table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
             const fileName = `ImperioFXJF_Word_${currentAccount}_${new Date().toISOString().split('T')[0]}.doc`;
             const blob = new Blob([htmlContent], { type: 'application/msword' });
             const url = URL.createObjectURL(blob);
@@ -2036,7 +2167,7 @@
     
     function updateTradesTable() {
         const tbody = document.getElementById('tradesBody');
-        if (trades.length === 0) { tbody.innerHTML = '<td><td colspan="13">Nenhum registro ainda</tr>'; return; }
+        if (trades.length === 0) { tbody.innerHTML = '<tr><td colspan="13">Nenhum registro ainda</tr>'; return; }
         const sorted = [...trades].sort((a, b) => {
             if (a.date !== b.date) return new Date(a.date) - new Date(b.date);
             return new Date(a.timestamp) - new Date(b.timestamp);

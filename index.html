@@ -7,22 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Império FX JF">
-    <meta name="mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3a'/%3E%3Ctext x='50' y='67' font-size='50' text-anchor='middle' fill='%23ffd700' font-weight='bold'%3E💰%3C/text%3E%3C/svg%3E">
-    <link rel="manifest" href="data:application/manifest+json,{
-        %22name%22:%22Imp%C3%A9rio%20FX%20JF%22,
-        %22short_name%22:%22Imp%C3%A9rio%20FX%22,
-        %22start_url%22:%22.%22,
-        %22display%22:%22standalone%22,
-        %22background_color%22:%22%231a1f3a%22,
-        %22theme_color%22:%22%231a1f3a%22,
-        %22orientation%22:%22portrait%22,
-        %22icons%22:[{
-            %22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3a'/%3E%3Ctext x='50' y='67' font-size='50' text-anchor='middle' fill='%23ffd700' font-weight='bold'%3E💰%3C/text%3E%3C/svg%3E%22,
-            %22sizes%22:%22100x100%22,
-            %22type%22:%22image/svg+xml%22
-        }]
-    }">
     <title>Império FX JF - Gestão Financeira do Trader</title>
     <style>
         * {
@@ -41,10 +26,6 @@
         body.light-mode {
             background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
             color: #1a1f3a;
-        }
-        /* Quando instalado como app nativo, remove a barra de rolagem extra */
-        body:fullscreen, body:-webkit-full-screen {
-            overflow-y: auto;
         }
         .container {
             max-width: 1600px;
@@ -581,6 +562,25 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <!-- IndexedDB Shim para compatibilidade -->
     <script src="https://cdn.jsdelivr.net/npm/idb@8.0.0/build/umd.js"></script>
+    
+    <!-- MANIFEST PARA PWA (INSTALAÇÃO NATIVA SEM BARRA DE ENDEREÇO) -->
+    <link rel="manifest" href="data:application/manifest+json,{
+        \"name\": \"Império FX JF\",
+        \"short_name\": \"Império FX\",
+        \"description\": \"Gestão Financeira do Trader - Múltiplas Contas, Gráficos, Relatórios\",
+        \"start_url\": \".\",
+        \"display\": \"standalone\",
+        \"theme_color\": \"#1a1f3a\",
+        \"background_color\": \"#0a0e27\",
+        \"icons\": [
+            {
+                \"src\": \"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3a'/%3E%3Ctext x='50' y='67' font-size='50' text-anchor='middle' fill='%23ffd700' font-weight='bold'%3E💰%3C/text%3E%3C/svg%3E\",
+                \"sizes\": \"any\",
+                \"type\": \"image/svg+xml\",
+                \"purpose\": \"any maskable\"
+            }
+        ]
+    }">
 </head>
 <body>
 <div class="container">
@@ -914,23 +914,6 @@
     
     // ==================== FUNÇÕES DE INSTALAÇÃO NATIVA (PWA) ====================
     
-    // Registrar Service Worker para PWA completo (permite instalação com barra de endereço removida)
-    function registerServiceWorker() {
-        if ('serviceWorker' in navigator) {
-            // Criar um service worker simples inline via blob
-            const swCode = `self.addEventListener('fetch', function(event) { event.respondWith(fetch(event.request)); });`;
-            const blob = new Blob([swCode], { type: 'application/javascript' });
-            const swUrl = URL.createObjectURL(blob);
-            
-            navigator.serviceWorker.register(swUrl).then(registration => {
-                console.log('Service Worker registered successfully for PWA installation');
-                URL.revokeObjectURL(swUrl);
-            }).catch(error => {
-                console.log('Service Worker registration failed:', error);
-            });
-        }
-    }
-    
     // Detectar se já está instalado como app
     function isAppInstalled() {
         // Verifica se está em modo standalone (PWA instalado)
@@ -955,11 +938,11 @@
         if (isAppInstalled()) {
             installBtn.innerHTML = '<span>✅</span> <span>App Instalado</span>';
             installBtn.classList.add('installed');
-            installBtn.title = 'Aplicativo já instalado no seu dispositivo - Modo sem barra de navegação';
+            installBtn.title = 'Aplicativo já instalado no seu dispositivo';
         } else {
-            installBtn.innerHTML = '<span>📲</span> <span>Instalar App (Sem Barra URL)</span>';
+            installBtn.innerHTML = '<span>📲</span> <span>Instalar App</span>';
             installBtn.classList.remove('installed');
-            installBtn.title = 'Instalar como aplicativo nativo - A barra de endereço será removida';
+            installBtn.title = 'Instalar como aplicativo nativo no seu dispositivo';
         }
     }
     
@@ -967,7 +950,7 @@
     async function installApp() {
         // Se já estiver instalado, apenas informar
         if (isAppInstalled()) {
-            alert('✅ O aplicativo já está instalado no seu dispositivo!\n\n📱 Você pode acessá-lo pela tela inicial do seu celular.\n🔒 A barra de navegação (URL) NÃO aparecerá.');
+            alert('✅ O aplicativo já está instalado no seu dispositivo!\n\n📱 Você pode acessá-lo pela tela inicial do seu celular.');
             return;
         }
         
@@ -980,66 +963,56 @@
             if (outcome === 'accepted') {
                 localStorage.setItem('app_installed_flag', 'true');
                 updateInstallButton();
-                alert('🎉 Parabéns! O app foi instalado com sucesso!\n\n📱 Agora você pode acessá-lo pela tela inicial do seu dispositivo.\n🔒 A barra de endereço do navegador NÃO será exibida!');
+                alert('🎉 Parabéns! O app foi instalado com sucesso!\n\n📱 Agora você pode acessá-lo pela tela inicial do seu dispositivo.');
             } else {
-                alert('ℹ️ Você pode instalar o app manualmente:\n\n• Android: Menu do Chrome → "Instalar aplicativo"\n• iPhone: Compartilhar → "Adicionar à Tela de Início"\n\n✨ Após instalado, a barra de URL desaparecerá!');
+                alert('ℹ️ Você pode instalar o app manualmente:\n\n• Android: Menu do Chrome → "Instalar aplicativo"\n• iPhone: Compartilhar → "Adicionar à Tela de Início"');
             }
             deferredPrompt = null;
             return;
         }
         
         // Método 2: Para navegadores que não suportam beforeinstallprompt
+        // Mostrar instruções manuais
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const isAndroid = /Android/.test(navigator.userAgent);
         
         let instructions = '';
         if (isIOS) {
-            instructions = '📱 Para instalar no iPhone/iPad (SEM BARRA DE URL):\n\n1. Toque no botão Compartilhar 📤\n2. Role para baixo e toque em "Adicionar à Tela de Início"\n3. Toque em "Adicionar" no canto superior direito\n\n✅ Após instalado, abra pelo ícone na tela inicial - a barra de endereço NÃO aparecerá!';
+            instructions = '📱 Para instalar no iPhone/iPad:\n\n1. Toque no botão Compartilhar 📤\n2. Role para baixo e toque em "Adicionar à Tela de Início"\n3. Toque em "Adicionar" no canto superior direito';
         } else if (isAndroid) {
-            instructions = '📱 Para instalar no Android (SEM BARRA DE URL):\n\n1. Toque no menu do navegador (3 pontos)\n2. Toque em "Instalar aplicativo"\n3. Confirme a instalação\n\n✅ Após instalado, acesse pelo ícone - a barra de navegação será removida!';
+            instructions = '📱 Para instalar no Android:\n\n1. Toque no menu do navegador (3 pontos)\n2. Toque em "Instalar aplicativo"\n3. Confirme a instalação';
         } else {
-            instructions = '💻 Para instalar no computador:\n\n• Chrome/Edge: Clique no ícone de instalação na barra de endereço\n• Ou vá ao menu e clique em "Instalar aplicativo"\n\n✅ O app abrirá em janela própria sem barra de endereço!';
+            instructions = '💻 Para instalar no computador:\n\n• Chrome/Edge: Clique no ícone de instalação na barra de endereço\n• Ou vá ao menu do navegador e clique em "Instalar aplicativo"';
         }
         
-        alert(`📲 INSTALAÇÃO NATIVA - SEM BARRA DE NAVEGAÇÃO\n\n${instructions}\n\n✨ Características do modo instalado:\n• Tela cheia/limpa sem URL\n• Acesso rápido pela tela inicial\n• Experiência de app nativo`);
+        alert(`📲 Instalação Nativa\n\n${instructions}\n\n✨ Após instalar, o app funcionará offline e terá acesso a mais recursos do seu dispositivo!`);
     }
     
     // Capturar evento de instalação do navegador
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        console.log('beforeinstallprompt event captured - PWA installation available');
+        console.log('beforeinstallprompt event captured');
         updateInstallButton();
     });
     
     // Detectar quando o app foi instalado com sucesso
     window.addEventListener('appinstalled', () => {
-        console.log('App installed successfully - standalone mode active');
+        console.log('App installed successfully');
         localStorage.setItem('app_installed_flag', 'true');
         deferredPrompt = null;
         updateInstallButton();
-        
-        // Informar usuário sobre o modo sem barra de navegação
-        setTimeout(() => {
-            alert('✅ App instalado com sucesso!\n\n🔒 Quando você abrir pelo ícone na tela inicial, a barra de endereço do navegador NÃO aparecerá.\n📱 A experiência será como um aplicativo nativo!');
-        }, 1000);
     });
     
     // Verificar instalação ao carregar a página
     document.addEventListener('DOMContentLoaded', () => {
         updateInstallButton();
-        registerServiceWorker();
         
         // Para WebViews de APK, marcar como instalado automaticamente
         const userAgent = navigator.userAgent.toLowerCase();
         if (userAgent.includes('wv') || userAgent.includes('webview')) {
             localStorage.setItem('app_installed_flag', 'true');
             updateInstallButton();
-        }
-        
-        // Se estiver em modo standalone, exibir mensagem amigável
-        if (isAppInstalled()) {
-            console.log('App running in standalone mode - navigation bar hidden');
         }
     });
     
@@ -1048,7 +1021,6 @@
         if (e.matches) {
             localStorage.setItem('app_installed_flag', 'true');
             updateInstallButton();
-            console.log('App switched to standalone mode - URL bar hidden');
         }
     });
     
@@ -1990,7 +1962,7 @@
             trades.forEach((t, i) => {
                 rows += `<tr><td>${i + 1}</td><td>${t.date}</td><td>R$ ${(t.profit || 0).toFixed(2)}</td><td>R$ ${(t.loss || 0).toFixed(2)}</td><td>R$ ${(t.withdraw || 0).toFixed(2)}</td><td>R$ ${(t.deposit || 0).toFixed(2)}</td><td>R$ ${(t.operationalResult || 0).toFixed(2)}</td><td>${(t.dailyPercentage || 0).toFixed(2)}%</td><td>${(t.percentageOverTotal || 0).toFixed(2)}%</td><td>${t.asset || '-'}</td></tr>`;
             });
-            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:'Segoe UI',Arial;margin:30px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;background:#f9f9f9}.summary h3{margin-top:0;color:#d4a000}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;border:1px solid #000}td{padding:8px;border:1px solid #ccc}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO</h3><p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>Rentabilidade (S/Inicial):</strong> ${totalPercent}%</p><p><strong>Rentabilidade (S/Total):</strong> ${totalPercentOverTotal}%</p><p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p></div><h3>📋 OPERAÇÕES</h3> <table><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>% Op.</th><th>% S/Total</th><th>Ativo</th></tr></thead><tbody>${rows}</tbody></table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
+            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:'Segoe UI',Arial;margin:30px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;background:#f9f9f9}.summary h3{margin-top:0;color:#d4a000}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;border:1px solid #000}td{padding:8px;border:1px solid #ccc}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO</h3><p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>Rentabilidade (S/Inicial):</strong> ${totalPercent}%</p><p><strong>Rentabilidade (S/Total):</strong> ${totalPercentOverTotal}%</p><p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p></div><h3>📋 OPERAÇÕES</h3> <table><thead><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>% Op.</th><th>% S/Total</th><th>Ativo</th></thead><tbody>${rows}</tbody> </table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
             const fileName = `ImperioFXJF_Word_${currentAccount}_${new Date().toISOString().split('T')[0]}.doc`;
             const blob = new Blob([htmlContent], { type: 'application/msword' });
             const url = URL.createObjectURL(blob);
@@ -2090,7 +2062,7 @@
             const percentage = (order.custoIndividual / totalCostAllOrders * 100).toFixed(1);
             resultHTML += `<tr><td style="text-align: center;"><strong>${order.ordem}</strong><td style="text-align: right;">${order.distanciaDoInicio.toLocaleString()} pts<td style="text-align: right;">${order.distanciaPercorrida.toLocaleString()} pts<td style="text-align: right; color: #ffd700;">R$ ${order.custoIndividual.toFixed(2)}<td style="text-align: right;">R$ ${order.custoAcumulado.toFixed(2)}<td style="text-align: center;">${percentage}%</tr>`;
         });
-        resultHTML += `</tbody></table></div><div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;"><strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>📌 Ordem mais distante: <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(2)}</strong> | 📌 Ordem mais próxima: <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</strong><br>📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(2)}</span></div>`;
+        resultHTML += `</tbody>}</div><div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;"><strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>📌 Ordem mais distante: <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(2)}</strong> | 📌 Ordem mais próxima: <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</strong><br>📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(2)}</span></div>`;
         document.getElementById('gridResult').innerHTML = resultHTML;
         cachedGridResult = resultHTML;
     }
@@ -2359,9 +2331,8 @@
         const savedTheme = await getSetting('theme');
         if (savedTheme === 'light') document.body.classList.add('light-mode');
         
-        console.log('Sistema inicializado com armazenamento ILIMITADO, PWA e impressão!');
-        console.log('📱 Para instalar como app nativo (SEM BARRA DE URL), clique no botão Instalar App');
+        console.log('Sistema inicializado com armazenamento ILIMITADO e funcionalidade de impressão!');
     });
 </script>
 </body>
-    </html>
+        </html>

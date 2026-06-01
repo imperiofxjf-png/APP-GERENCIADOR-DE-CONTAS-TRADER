@@ -151,6 +151,12 @@
             color: white;
         }
         
+        /* NOVO: Botão Relatório Mensal */
+        .btn-monthly-report {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+        }
+        
         .menu-btn:hover {
             transform: translateY(-2px);
             filter: brightness(1.1);
@@ -461,6 +467,72 @@
             background: rgba(0,0,0,0.9);
         }
         
+        /* NOVO: Estilos para Modal de Relatório Mensal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #1a1f3a;
+            border-radius: 20px;
+            max-width: 90%;
+            width: 900px;
+            max-height: 85%;
+            overflow-y: auto;
+            padding: 25px;
+            border: 2px solid #ffd700;
+        }
+        .light-mode .modal-content {
+            background: white;
+            color: #333;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ffd700;
+            padding-bottom: 10px;
+        }
+        .modal-header h2 {
+            color: #ffd700;
+        }
+        .close-modal {
+            background: #ff4444;
+            padding: 8px 15px;
+            font-size: 1.2em;
+        }
+        .monthly-report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .monthly-report-table th, .monthly-report-table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #3a3f5e;
+        }
+        .light-mode .monthly-report-table th, .light-mode .monthly-report-table td {
+            border-color: #ddd;
+        }
+        .monthly-report-table th {
+            background: rgba(255,215,0,0.2);
+        }
+        .report-summary {
+            background: rgba(255,215,0,0.1);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
         /* MELHORIA DE LEGIBILIDADE - Cores com maior contraste */
         .text-highlight {
             color: #ffd700;
@@ -504,7 +576,8 @@
             }
             .menu-bar, .storage-status, button, .menu-btn, .btn-print, 
             .account-selector button, #tradeForm button, .btn-calc,
-            .btn-success, .btn-danger, .btn-info, .btn-warning, .btn-account {
+            .btn-success, .btn-danger, .btn-info, .btn-warning, .btn-account,
+            .modal, .close-modal {
                 display: none !important;
             }
             .card {
@@ -554,6 +627,14 @@
             }
             .charts-row {
                 grid-template-columns: 1fr;
+            }
+            .modal-content {
+                padding: 15px;
+                width: 95%;
+            }
+            .monthly-report-table th, .monthly-report-table td {
+                padding: 6px;
+                font-size: 0.7em;
             }
         }
     </style>
@@ -617,6 +698,10 @@
             <div class="menu-group">
                 <button onclick="printFullReport()" class="menu-btn btn-print" title="Imprimir relatório completo (Web/App)">
                     <span>🖨️</span> <span>Imprimir</span>
+                </button>
+                <!-- NOVO: Botão Relatório Mensal -->
+                <button onclick="showMonthlyReport()" class="menu-btn btn-monthly-report" title="Relatório mensal de lucros e rentabilidade">
+                    <span>📅</span> <span>Relatório Mensal</span>
                 </button>
                 <button onclick="exportBackup()" class="menu-btn btn-backup" title="Fazer backup completo">
                     <span>💾</span> <span>Backup</span>
@@ -887,6 +972,23 @@
     </div>
 </div>
 
+<!-- NOVO: Modal para Relatório Mensal -->
+<div id="monthlyReportModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>📅 RELATÓRIO MENSAL - <span id="reportAccountName"></span></h2>
+            <button onclick="closeMonthlyReportModal()" class="close-modal">✕ Fechar</button>
+        </div>
+        <div id="monthlyReportContent">
+            <p style="text-align: center;">Carregando dados...</p>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+            <button onclick="exportMonthlyReportToPDF()" class="btn-pdf">📄 Exportar PDF</button>
+            <button onclick="exportMonthlyReportToExcel()" class="btn-excel">📊 Exportar Excel</button>
+        </div>
+    </div>
+</div>
+
 <!-- Indicador de armazenamento -->
 <div class="storage-status" id="storageStatus" onclick="showStorageInfo()">
     💾 Carregando...
@@ -1038,6 +1140,391 @@
         return isWebView || isStandalone;
     }
     
+    // ==================== NOVO: RELATÓRIOS MENSAIS ====================
+    
+    // Função para gerar dados do relatório mensal
+    function generateMonthlyReport() {
+        if (!trades.length || systemInitialBalance === null) {
+            return null;
+        }
+        
+        // Agrupar operações por mês
+        const monthlyData = {};
+        
+        trades.forEach(trade => {
+            const [year, month, day] = trade.date.split('-');
+            const monthKey = `${year}-${month}`;
+            const monthName = new Date(year, month-1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            
+            if (!monthlyData[monthKey]) {
+                monthlyData[monthKey] = {
+                    key: monthKey,
+                    name: monthName,
+                    year: parseInt(year),
+                    month: parseInt(month),
+                    totalProfit: 0,
+                    totalLoss: 0,
+                    totalWithdraw: 0,
+                    totalDeposit: 0,
+                    operationalResult: 0,
+                    trades: [],
+                    firstTradeDate: trade.date,
+                    lastTradeDate: trade.date,
+                    startBalance: null,
+                    endBalance: null
+                };
+            }
+            
+            monthlyData[monthKey].totalProfit += trade.profit || 0;
+            monthlyData[monthKey].totalLoss += trade.loss || 0;
+            monthlyData[monthKey].totalWithdraw += trade.withdraw || 0;
+            monthlyData[monthKey].totalDeposit += trade.deposit || 0;
+            monthlyData[monthKey].operationalResult += (trade.operationalResult || 0);
+            monthlyData[monthKey].trades.push(trade);
+            
+            if (trade.date < monthlyData[monthKey].firstTradeDate) monthlyData[monthKey].firstTradeDate = trade.date;
+            if (trade.date > monthlyData[monthKey].lastTradeDate) monthlyData[monthKey].lastTradeDate = trade.date;
+        });
+        
+        // Calcular saldo inicial de cada mês e rentabilidade
+        const sortedMonths = Object.keys(monthlyData).sort();
+        
+        for (let i = 0; i < sortedMonths.length; i++) {
+            const monthKey = sortedMonths[i];
+            const month = monthlyData[monthKey];
+            
+            // Encontrar saldo inicial do mês
+            const firstTradeOfMonth = month.trades.sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+            month.startBalance = firstTradeOfMonth.initialBalance;
+            
+            // Encontrar saldo final do mês
+            const lastTradeOfMonth = month.trades.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            month.endBalance = lastTradeOfMonth.finalDayBalance;
+            
+            // Calcular rentabilidade do mês (baseada apenas em resultado operacional sobre saldo inicial do mês)
+            if (month.startBalance && month.startBalance !== 0) {
+                month.percentageReturn = (month.operationalResult / month.startBalance) * 100;
+            } else {
+                month.percentageReturn = 0;
+            }
+            
+            // Calcular rentabilidade acumulada do ano
+            const year = month.year;
+            if (!monthlyData[`year_${year}`]) {
+                monthlyData[`year_${year}`] = {
+                    isYearSummary: true,
+                    year: year,
+                    totalProfit: 0,
+                    totalLoss: 0,
+                    operationalResult: 0,
+                    startBalance: null,
+                    endBalance: null,
+                    months: []
+                };
+            }
+            monthlyData[`year_${year}`].totalProfit += month.totalProfit;
+            monthlyData[`year_${year}`].totalLoss += month.totalLoss;
+            monthlyData[`year_${year}`].operationalResult += month.operationalResult;
+            monthlyData[`year_${year}`].months.push(month);
+        }
+        
+        // Calcular saldo inicial e final dos anos
+        for (const key in monthlyData) {
+            if (monthlyData[key].isYearSummary) {
+                const yearData = monthlyData[key];
+                const sortedYearMonths = yearData.months.sort((a, b) => a.month - b.month);
+                if (sortedYearMonths.length > 0) {
+                    yearData.startBalance = sortedYearMonths[0].startBalance;
+                    yearData.endBalance = sortedYearMonths[sortedYearMonths.length - 1].endBalance;
+                    if (yearData.startBalance && yearData.startBalance !== 0) {
+                        yearData.percentageReturn = (yearData.operationalResult / yearData.startBalance) * 100;
+                    } else {
+                        yearData.percentageReturn = 0;
+                    }
+                }
+            }
+        }
+        
+        // Calcular total geral
+        const totalProfit = trades.reduce((sum, t) => sum + (t.profit || 0), 0);
+        const totalLoss = trades.reduce((sum, t) => sum + (t.loss || 0), 0);
+        const totalOperational = totalProfit - totalLoss;
+        const finalBalance = trades.length > 0 ? trades[trades.length - 1].finalDayBalance : systemInitialBalance;
+        let totalPercentage = 0;
+        if (systemInitialBalance && systemInitialBalance !== 0) {
+            totalPercentage = (totalOperational / systemInitialBalance) * 100;
+        }
+        
+        return {
+            months: sortedMonths.map(m => monthlyData[m]),
+            years: Object.keys(monthlyData).filter(k => monthlyData[k].isYearSummary).map(k => monthlyData[k]),
+            totals: {
+                totalProfit,
+                totalLoss,
+                totalOperational,
+                finalBalance,
+                totalPercentage,
+                initialBalance: systemInitialBalance,
+                totalTrades: trades.length
+            }
+        };
+    }
+    
+    // Exibir modal com relatório mensal
+    function showMonthlyReport() {
+        if (!currentAccount) {
+            alert('⚠️ Nenhuma conta selecionada!');
+            return;
+        }
+        
+        if (!trades.length) {
+            alert('⚠️ Nenhum registro encontrado nesta conta!\n\nAdicione operações para gerar relatórios mensais.');
+            return;
+        }
+        
+        if (systemInitialBalance === null) {
+            alert('⚠️ Configure o saldo inicial da conta primeiro!');
+            return;
+        }
+        
+        const report = generateMonthlyReport();
+        if (!report) {
+            alert('❌ Erro ao gerar relatório. Verifique os dados da conta.');
+            return;
+        }
+        
+        document.getElementById('reportAccountName').innerHTML = currentAccount;
+        
+        // Gerar HTML do relatório
+        let html = `
+            <div class="report-summary">
+                <h3>📊 RESUMO GERAL</h3>
+                <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+                    <div class="metric-card"><h4>💰 Saldo Inicial</h4><div class="value">R$ ${report.totals.initialBalance.toFixed(2)}</div></div>
+                    <div class="metric-card"><h4>📈 Lucro Total</h4><div class="value profit-positive">R$ ${report.totals.totalProfit.toFixed(2)}</div></div>
+                    <div class="metric-card"><h4>📉 Perda Total</h4><div class="value profit-negative">R$ ${report.totals.totalLoss.toFixed(2)}</div></div>
+                    <div class="metric-card"><h4>📊 Resultado Op.</h4><div class="value ${report.totals.totalOperational >= 0 ? 'profit-positive' : 'profit-negative'}">R$ ${report.totals.totalOperational.toFixed(2)}</div></div>
+                    <div class="metric-card"><h4>🏁 Saldo Final</h4><div class="value">R$ ${report.totals.finalBalance.toFixed(2)}</div></div>
+                    <div class="metric-card"><h4>📈 Rentabilidade Total</h4><div class="value ${report.totals.totalPercentage >= 0 ? 'profit-positive' : 'profit-negative'}">${report.totals.totalPercentage >= 0 ? '+' : ''}${report.totals.totalPercentage.toFixed(2)}%</div></div>
+                    <div class="metric-card"><h4>📊 Total Trades</h4><div class="value">${report.totals.totalTrades}</div></div>
+                </div>
+            </div>
+        `;
+        
+        if (report.months.length > 0) {
+            html += `<h3 style="margin-top: 20px;">📅 RELATÓRIO POR MÊS</h3>`;
+            html += `<table class="monthly-report-table">
+                        <thead>
+                            <tr>
+                                <th>Mês/Ano</th>
+                                <th>Lucro (R$)</th>
+                                <th>Perda (R$)</th>
+                                <th>Resultado Op. (R$)</th>
+                                <th>Rentabilidade %</th>
+                                <th>Saldo Inicial (R$)</th>
+                                <th>Saldo Final (R$)</th>
+                                <th>Qtd Trades</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+            
+            for (const month of report.months) {
+                const rentClass = month.percentageReturn >= 0 ? 'profit-positive' : 'profit-negative';
+                const resultClass = month.operationalResult >= 0 ? 'profit-positive' : 'profit-negative';
+                html += `<tr>
+                            <td><strong>${month.name}</strong></td>
+                            <td class="profit-positive">R$ ${month.totalProfit.toFixed(2)}</td>
+                            <td class="profit-negative">R$ ${month.totalLoss.toFixed(2)}</td>
+                            <td class="${resultClass}">${month.operationalResult >= 0 ? '+' : ''}R$ ${month.operationalResult.toFixed(2)}</td>
+                            <td class="${rentClass}">${month.percentageReturn >= 0 ? '+' : ''}${month.percentageReturn.toFixed(2)}%</td>
+                            <td>R$ ${month.startBalance.toFixed(2)}</td>
+                            <td>R$ ${month.endBalance.toFixed(2)}</td>
+                            <td>${month.trades.length}</td>
+                        </tr>`;
+            }
+            
+            html += `</tbody></table>`;
+        }
+        
+        if (report.years.length > 0) {
+            html += `<h3 style="margin-top: 20px;">📆 RELATÓRIO POR ANO</h3>`;
+            html += `<table class="monthly-report-table">
+                        <thead>
+                            <tr>
+                                <th>Ano</th>
+                                <th>Lucro (R$)</th>
+                                <th>Perda (R$)</th>
+                                <th>Resultado Op. (R$)</th>
+                                <th>Rentabilidade %</th>
+                                <th>Saldo Inicial (R$)</th>
+                                <th>Saldo Final (R$)</th>
+                                <th>Qtd Trades</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+            
+            for (const year of report.years) {
+                const totalTrades = year.months.reduce((sum, m) => sum + m.trades.length, 0);
+                const rentClass = year.percentageReturn >= 0 ? 'profit-positive' : 'profit-negative';
+                const resultClass = year.operationalResult >= 0 ? 'profit-positive' : 'profit-negative';
+                html += `<tr>
+                            <td><strong>${year.year}</strong></td>
+                            <td class="profit-positive">R$ ${year.totalProfit.toFixed(2)}</td>
+                            <td class="profit-negative">R$ ${year.totalLoss.toFixed(2)}</td>
+                            <td class="${resultClass}">${year.operationalResult >= 0 ? '+' : ''}R$ ${year.operationalResult.toFixed(2)}</td>
+                            <td class="${rentClass}">${year.percentageReturn >= 0 ? '+' : ''}${year.percentageReturn.toFixed(2)}%</td>
+                            <td>R$ ${year.startBalance ? year.startBalance.toFixed(2) : '-'}</td>
+                            <td>R$ ${year.endBalance ? year.endBalance.toFixed(2) : '-'}</td>
+                            <td>${totalTrades}</td>
+                        </tr>`;
+            }
+            
+            html += `</tbody></table>`;
+        }
+        
+        // Adicionar análise de performance
+        const positiveMonths = report.months.filter(m => m.percentageReturn > 0).length;
+        const negativeMonths = report.months.filter(m => m.percentageReturn < 0).length;
+        const bestMonth = report.months.reduce((best, m) => m.percentageReturn > best.percentageReturn ? m : best, report.months[0]);
+        const worstMonth = report.months.reduce((worst, m) => m.percentageReturn < worst.percentageReturn ? m : worst, report.months[0]);
+        
+        html += `
+            <div class="report-summary" style="margin-top: 20px;">
+                <h3>📈 ANÁLISE DE PERFORMANCE</h3>
+                <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="metric-card"><h4>✅ Meses Positivos</h4><div class="value profit-positive">${positiveMonths}</div></div>
+                    <div class="metric-card"><h4>❌ Meses Negativos</h4><div class="value profit-negative">${negativeMonths}</div></div>
+                    <div class="metric-card"><h4>🏆 Melhor Mês</h4><div class="value profit-positive">${bestMonth ? bestMonth.name + ': +' + bestMonth.percentageReturn.toFixed(2) + '%' : '-'}</div></div>
+                    <div class="metric-card"><h4>💔 Pior Mês</h4><div class="value profit-negative">${worstMonth ? worstMonth.name + ': ' + worstMonth.percentageReturn.toFixed(2) + '%' : '-'}</div></div>
+                    <div class="metric-card"><h4>📊 Média Mensal</h4><div class="value">${report.months.length ? (report.months.reduce((sum, m) => sum + m.percentageReturn, 0) / report.months.length).toFixed(2) + '%' : '-'}</div></div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('monthlyReportContent').innerHTML = html;
+        document.getElementById('monthlyReportModal').style.display = 'flex';
+    }
+    
+    function closeMonthlyReportModal() {
+        document.getElementById('monthlyReportModal').style.display = 'none';
+    }
+    
+    // Exportar relatório mensal para PDF
+    function exportMonthlyReportToPDF() {
+        const modalContent = document.getElementById('monthlyReportContent');
+        const accountName = document.getElementById('reportAccountName').innerHTML;
+        
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Relatório Mensal - ${accountName}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 30px; }
+                    h1 { color: #d4a000; text-align: center; }
+                    h2, h3 { color: #d4a000; margin-top: 20px; }
+                    .header { text-align: center; margin-bottom: 30px; }
+                    .summary { background: #f5f5f5; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+                    th { background: #f0f0f0; }
+                    .profit-positive { color: #008000; font-weight: bold; }
+                    .profit-negative { color: #ff0000; font-weight: bold; }
+                    .value { font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>🏛️ IMPÉRIO FX JF</h1>
+                    <h2>Relatório Mensal - ${accountName}</h2>
+                    <p>Gerado em: ${new Date().toLocaleString()}</p>
+                </div>
+                ${modalContent.innerHTML}
+            </body>
+            </html>
+        `;
+        
+        const fileName = `ImperioFXJF_RelatorioMensal_${accountName}_${new Date().toISOString().split('T')[0]}.pdf`;
+        html2pdf().set({ margin: 10, filename: fileName, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } }).from(htmlContent).save();
+        setTimeout(() => alert('✅ Relatório mensal exportado para PDF!'), 1000);
+    }
+    
+    // Exportar relatório mensal para Excel
+    function exportMonthlyReportToExcel() {
+        const report = generateMonthlyReport();
+        if (!report) {
+            alert('❌ Erro ao gerar dados do relatório!');
+            return;
+        }
+        
+        // Preparar dados para Excel
+        const monthlyData = report.months.map(m => ({
+            'Mês/Ano': m.name,
+            'Lucro (R$)': m.totalProfit,
+            'Perda (R$)': m.totalLoss,
+            'Resultado Operacional (R$)': m.operationalResult,
+            'Rentabilidade (%)': m.percentageReturn,
+            'Saldo Inicial (R$)': m.startBalance,
+            'Saldo Final (R$)': m.endBalance,
+            'Quantidade de Trades': m.trades.length
+        }));
+        
+        const yearData = report.years.map(y => ({
+            'Ano': y.year,
+            'Lucro (R$)': y.totalProfit,
+            'Perda (R$)': y.totalLoss,
+            'Resultado Operacional (R$)': y.operationalResult,
+            'Rentabilidade (%)': y.percentageReturn,
+            'Saldo Inicial (R$)': y.startBalance || 0,
+            'Saldo Final (R$)': y.endBalance || 0,
+            'Quantidade de Trades': y.months.reduce((sum, m) => sum + m.trades.length, 0)
+        }));
+        
+        const summaryData = [{
+            'Indicador': 'Saldo Inicial',
+            'Valor': report.totals.initialBalance
+        }, {
+            'Indicador': 'Lucro Total',
+            'Valor': report.totals.totalProfit
+        }, {
+            'Indicador': 'Perda Total',
+            'Valor': report.totals.totalLoss
+        }, {
+            'Indicador': 'Resultado Operacional',
+            'Valor': report.totals.totalOperational
+        }, {
+            'Indicador': 'Saldo Final',
+            'Valor': report.totals.finalBalance
+        }, {
+            'Indicador': 'Rentabilidade Total (%)',
+            'Valor': report.totals.totalPercentage
+        }, {
+            'Indicador': 'Total de Trades',
+            'Valor': report.totals.totalTrades
+        }];
+        
+        const workbook = XLSX.utils.book_new();
+        
+        const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(workbook, summarySheet, 'Resumo');
+        
+        if (monthlyData.length > 0) {
+            const monthlySheet = XLSX.utils.json_to_sheet(monthlyData);
+            XLSX.utils.book_append_sheet(workbook, monthlySheet, 'Relatório por Mês');
+        }
+        
+        if (yearData.length > 0) {
+            const yearSheet = XLSX.utils.json_to_sheet(yearData);
+            XLSX.utils.book_append_sheet(workbook, yearSheet, 'Relatório por Ano');
+        }
+        
+        const fileName = `ImperioFXJF_RelatorioMensal_${currentAccount}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        downloadFile(excelBuffer, fileName, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        alert('✅ Relatório mensal exportado para Excel!');
+    }
+    
     // FUNÇÃO DE IMPRESSÃO COMPLETA - Funciona na Web e no APK
     function printFullReport() {
         if (!currentAccount) {
@@ -1110,6 +1597,34 @@
         let percentageOverTotal = 0;
         if (finalBalance !== 0 && totalOperationalResult !== 0) {
             percentageOverTotal = (totalOperationalResult / finalBalance) * 100;
+        }
+        
+        // NOVO: Gerar relatório mensal para impressão
+        const monthlyReport = generateMonthlyReport();
+        let monthlyReportHTML = '';
+        if (monthlyReport && monthlyReport.months.length > 0) {
+            monthlyReportHTML = `
+                <div class="section">
+                    <div class="section-title">📅 RELATÓRIO MENSAL</div>
+                    <table style="width: 100%; font-size: 10px;">
+                        <thead>
+                            <tr><th>Mês/Ano</th><th>Lucro</th><th>Perda</th><th>Resultado</th><th>Rentabilidade</th><th>Saldo Inicial</th><th>Saldo Final</th><th>Trades</th></tr>
+                        </thead>
+                        <tbody>
+            `;
+            for (const month of monthlyReport.months) {
+                monthlyReportHTML += `<tr>
+                    <td>${month.name}</td>
+                    <td style="text-align: right;">R$ ${month.totalProfit.toFixed(2)}</td>
+                    <td style="text-align: right;">R$ ${month.totalLoss.toFixed(2)}</td>
+                    <td style="text-align: right;">${month.operationalResult >= 0 ? '+' : ''}R$ ${month.operationalResult.toFixed(2)}</td>
+                    <td style="text-align: right;">${month.percentageReturn >= 0 ? '+' : ''}${month.percentageReturn.toFixed(2)}%</td>
+                    <td style="text-align: right;">R$ ${month.startBalance.toFixed(2)}</td>
+                    <td style="text-align: right;">R$ ${month.endBalance.toFixed(2)}</td>
+                    <td style="text-align: center;">${month.trades.length}</td>
+                </tr>`;
+            }
+            monthlyReportHTML += `</tbody></table></div>`;
         }
         
         // Gerar tabela de operações
@@ -1291,6 +1806,8 @@
                     <div class="metric-card"><h4>📊 % Sobre Total Atual</h4><div class="value ${percentageOverTotal >= 0 ? 'profit-positive' : 'profit-negative'}">${percentageOverTotal >= 0 ? '+' : ''}${percentageOverTotal.toFixed(2)}%</div></div>
                 </div>
             </div>
+            
+            ${monthlyReportHTML}
             
             <div class="section">
                 <div class="section-title">📈 MÉTRICAS DE PERFORMANCE</div>
@@ -1960,9 +2477,9 @@
             
             let rows = '';
             trades.forEach((t, i) => {
-                rows += `<tr><td>${i + 1}</td><td>${t.date}</td><td>R$ ${(t.profit || 0).toFixed(2)}</td><td>R$ ${(t.loss || 0).toFixed(2)}</td><td>R$ ${(t.withdraw || 0).toFixed(2)}</td><td>R$ ${(t.deposit || 0).toFixed(2)}</td><td>R$ ${(t.operationalResult || 0).toFixed(2)}</td><td>${(t.dailyPercentage || 0).toFixed(2)}%</td><td>${(t.percentageOverTotal || 0).toFixed(2)}%</td><td>${t.asset || '-'}</td></tr>`;
+                rows += `<tr><td style="border:1px solid #ccc;padding:8px;">${i + 1}</td><td style="border:1px solid #ccc;padding:8px;">${t.date}</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">R$ ${(t.profit || 0).toFixed(2)}</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">R$ ${(t.loss || 0).toFixed(2)}</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">R$ ${(t.withdraw || 0).toFixed(2)}</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">R$ ${(t.deposit || 0).toFixed(2)}</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">R$ ${(t.operationalResult || 0).toFixed(2)}</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">${(t.dailyPercentage || 0).toFixed(2)}%</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">${(t.percentageOverTotal || 0).toFixed(2)}%</td><td style="border:1px solid #ccc;padding:8px;">${t.asset || '-'}</td></tr>`;
             });
-            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:'Segoe UI',Arial;margin:30px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;background:#f9f9f9}.summary h3{margin-top:0;color:#d4a000}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;border:1px solid #000}td{padding:8px;border:1px solid #ccc}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO</h3><p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>Rentabilidade (S/Inicial):</strong> ${totalPercent}%</p><p><strong>Rentabilidade (S/Total):</strong> ${totalPercentOverTotal}%</p><p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p></div><h3>📋 OPERAÇÕES</h3> <table><thead><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>% Op.</th><th>% S/Total</th><th>Ativo</th></thead><tbody>${rows}</tbody> </table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
+            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:'Segoe UI',Arial;margin:30px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;background:#f9f9f9}.summary h3{margin-top:0;color:#d4a000}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;border:1px solid #000}td{padding:8px;border:1px solid #ccc}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO</h3><p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance || 0).toFixed(2)}</p><p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>Rentabilidade (S/Inicial):</strong> ${totalPercent}%</p><p><strong>Rentabilidade (S/Total):</strong> ${totalPercentOverTotal}%</p><p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p></div><h3>📋 OPERAÇÕES</h3> <table><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>% Op.</th><th>% S/Total</th><th>Ativo</th></tr></thead><tbody>${rows}</tbody></table><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
             const fileName = `ImperioFXJF_Word_${currentAccount}_${new Date().toISOString().split('T')[0]}.doc`;
             const blob = new Blob([htmlContent], { type: 'application/msword' });
             const url = URL.createObjectURL(blob);
@@ -2060,9 +2577,9 @@
         let resultHTML = `<strong>📊 RESULTADO DO GRID PROGRESSIVO</strong><br><br><div class="grid-lotes-destaque">📈 ${numberOfOrders} ORDENS NO TOTAL</div><div>🔹 Ordem mais distante (posição 0): ${lotSize} lote(s)</div><div>🔹 Distanciamento: ${distancePoints.toLocaleString()} pontos entre ordens</div><div>🔹 Cobertura total: ${totalDistance.toLocaleString()} pontos</div><hr style="margin: 10px 0; border-color: #3a3f5e;"><div><strong>💰 Valor por ponto:</strong> R$ ${pointValue.toFixed(6)}</div><div><strong>💰 Custo da ordem mais distante:</strong> R$ ${maxOrderCost.toFixed(2)}</div><div><strong>📊 Custo da ordem mais próxima:</strong> R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</div><hr style="margin: 10px 0; border-color: #3a3f5e;"><div><strong>💰 Custo TOTAL:</strong> <span class="profit-positive" style="font-size: 1.3em;">R$ ${totalCostAllOrders.toFixed(2)}</span></div><div><strong>📊 Custo médio por ordem:</strong> R$ ${(totalCostAllOrders / numberOfOrders).toFixed(2)}</div><hr style="margin: 15px 0; border-color: #3a3f5e;"><div style="text-align: left;"><strong>📋 DETALHAMENTO ORDEM POR ORDEM:</strong></div><div style="text-align: left; max-height: 350px; overflow-y: auto; margin-top: 10px;"><table class="grid-info-table" style="width: 100%; font-size: 0.85em;"><thead><tr style="background: rgba(255,215,0,0.2);"><th># Ordem</th><th>Distância do Início</th><th>Distância Percorrida</th><th>Custo Individual</th><th>Custo Acumulado</th><th>% do Total</th></tr></thead><tbody>`;
         ordersWithAccumulated.forEach((order, idx) => {
             const percentage = (order.custoIndividual / totalCostAllOrders * 100).toFixed(1);
-            resultHTML += `<tr><td style="text-align: center;"><strong>${order.ordem}</strong><td style="text-align: right;">${order.distanciaDoInicio.toLocaleString()} pts<td style="text-align: right;">${order.distanciaPercorrida.toLocaleString()} pts<td style="text-align: right; color: #ffd700;">R$ ${order.custoIndividual.toFixed(2)}<td style="text-align: right;">R$ ${order.custoAcumulado.toFixed(2)}<td style="text-align: center;">${percentage}%</tr>`;
+            resultHTML += `<tr><td style="text-align: center;"><strong>${order.ordem}</strong></td><td style="text-align: right;">${order.distanciaDoInicio.toLocaleString()} pts</td><td style="text-align: right;">${order.distanciaPercorrida.toLocaleString()} pts</td><td style="text-align: right; color: #ffd700;">R$ ${order.custoIndividual.toFixed(2)}</td><td style="text-align: right;">R$ ${order.custoAcumulado.toFixed(2)}</td><td style="text-align: center;">${percentage}%</td></tr>`;
         });
-        resultHTML += `</tbody>}</div><div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;"><strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>📌 Ordem mais distante: <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(2)}</strong> | 📌 Ordem mais próxima: <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</strong><br>📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(2)}</span></div>`;
+        resultHTML += `</tbody></table></div><div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;"><strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>📌 Ordem mais distante: <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(2)}</strong> | 📌 Ordem mais próxima: <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</strong><br>📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(2)}</span></div>`;
         document.getElementById('gridResult').innerHTML = resultHTML;
         cachedGridResult = resultHTML;
     }
@@ -2335,4 +2852,4 @@
     });
 </script>
 </body>
-        </html>
+</html>

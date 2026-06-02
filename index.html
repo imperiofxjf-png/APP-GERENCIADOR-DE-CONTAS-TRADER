@@ -644,7 +644,7 @@
     <!-- IndexedDB Shim para compatibilidade -->
     <script src="https://cdn.jsdelivr.net/npm/idb@8.0.0/build/umd.js"></script>
     
-    <!-- MANIFEST PARA PWA (INSTALAÇÃO NATIVA SEM BARRA DE ENDEREÇO) -->
+    <!-- MANIFEST COMPLETO PARA INSTALAÇÃO NATIVA (PWA) -->
     <link rel="manifest" href="data:application/manifest+json,{
         \"name\": \"Império FX JF\",
         \"short_name\": \"Império FX\",
@@ -659,9 +659,75 @@
                 \"sizes\": \"any\",
                 \"type\": \"image/svg+xml\",
                 \"purpose\": \"any maskable\"
+            },
+            {
+                \"src\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEI0lEQVR4nO2dvWsbRxTHf29Jp6CkCxHF4EoQF1KBTRdWQnAR4kKQBCH/QCp3KdIGgv0HpEoTpxArf4Cp3KVIWwWkCwQWgUkXgYJAUriQqNAZRcG7O8/d+1jXzkq70qe7OzPvA0NOO83t2533fjvzZgRVQVEURVEURVEURVEURVEURVEURfn/kC/O+3jLJRu3ygM/yYdrwvy7LNEwbyiKYh4PpJmSZm7U0gLPyHIfJtqAvwJfgt+BP4A/Q+DvLDEwYV4PpJnLSJwz7/9a4BlZ5qWCKfvO/S8Bf0qa74oS6bVcKorSTM6BvwHmT+JokWUupZLlUn10Cjx77jP/ZR8r9z6gVxQlEnNABm9uGdvtKPHM9gP+nZAmQ1GmTtbaTyUagAnzZZPmNwDAfFmhAVj5x5NABpOuKCEJ8k0GvwF/hgK+RglYgA+/GPgN/NkX4P3ffA3QAhSFWJwD/xUidnUf+HAwGHxKSTNFsR4vjXzD5v3XYDkUtORepKQpims5E/lm3PueNNF9t9dS0hTFtfxqfOy7F7hnYvh8AwwGg+dPnjzZS1FTFMUxs/d7WQkG8G03H95nqGleQ4g2HztfLBbfiPxeQ5qqoijmEyxGg7Hv/Rj47vuWp6QpinPhdzOA1+G0jI+fp6QpinPhd2Ooz+rc9xj/fG+laJ4/GiqK9Xg9xpmnLgD84WzJjQyfP39OlrY/TZ6mqirK1DXgQ+Bz0D/hQm/Hz58/jweDwS2IlM1nJ6U1RVHq43boXLkG2oHjJ3+AJHcBqg2BXh9FkZSHjrN2HpAlYhGdMT81FZR4Zi/AuBvAp6C1CY3Yy5eJpc73Hw0Gg29NqKyiKOpM4PXBYPAsZR0lZb47gttUJ4KKS8hx9j5UAFnUJbwSWADsAxcBR4CjKQv9AEzA/8H+AvwN7Nk01cPqSujBklD/vRf4DHgJ7KyQpU/nPyd7sGIZAAK4BHYAOmvd9LwJ1o8cLgA4zAE+D4E9u9l13liBCfAB4A4wXyHLFwH4pqIlgQM4tU6Wvz1YjsKcAD8Bd9bJMrZDm4kX4AfgUyf6XvAejGQnwBng5BUC7ATYqJjfF+B9d+4dC+zNxgQ4C3yY0VKxnYDnzj1o2HfiLl4GYEfELWwYQF3CcwHmHbZXwnV+X4D3uY4WMr4E8J+UjyewPpOmqk2gPMJfBl7tM3AE+KYtBTAYDN7qekOWlD0Mv9H1QoOjpsEB8DnwXzR+F/CHW66lKikLcDnpbxTgW8r/BgADuFk1tz6nz/9eKfmqkpIAV1O8T9E27gPvTT2rLwG+Ab5IWU/5/zMKcOMqQv9WC9/9g/UuwBbgBbsfKrcW3f/WN+oDeBd4B7gJXAIu2FwBrG77qoGrwC3gXuCtzVuY7C3gKvAi8C7gBf8HlzS9+T2Hp8EAAAAASUVORK5CYII=\",
+                \"sizes\": \"96x96\",
+                \"type\": \"image/png\",
+                \"purpose\": \"any maskable\"
             }
         ]
     }">
+    
+    <!-- SERVICE WORKER INJECTION - CRÍTICO PARA INSTALAÇÃO NATIVA -->
+    <script>
+        (function() {
+            // Cria um Service Worker inline (não precisa de arquivo separado)
+            const swCode = `// Service Worker para Império FX JF - Instalação Nativa
+const CACHE_NAME = 'imperiofx-cache-v1';
+const urlsToCache = [
+    '.',
+    'index.html'
+];
+
+self.addEventListener('install', event => {
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(urlsToCache))
+            .then(() => self.skipWaiting())
+    );
+});
+
+self.addEventListener('fetch', event => {
+    event.respondWith(
+        caches.match(event.request)
+            .then(response => response || fetch(event.request))
+    );
+});
+
+self.addEventListener('activate', event => {
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cache => {
+                    if (cache !== CACHE_NAME) {
+                        return caches.delete(cache);
+                    }
+                })
+            );
+        }).then(() => self.clients.claim())
+    );
+});`;
+
+            // Converte o código do SW para Blob URL
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            
+            // Registra o Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register(swUrl)
+                    .then(reg => {
+                        console.log('✅ Service Worker registrado com sucesso! Instalação nativa disponível.');
+                        // Limpa a URL do blob após registro
+                        setTimeout(() => URL.revokeObjectURL(swUrl), 1000);
+                    })
+                    .catch(err => {
+                        console.warn('⚠️ Service Worker não registrado:', err);
+                        console.log('ℹ️ O app ainda funcionará, mas a instalação nativa pode não estar disponível.');
+                    });
+            }
+        })();
+    </script>
 </head>
 <body>
 <div class="container">
@@ -1339,10 +1405,10 @@
                             <td>R$ ${month.startBalance.toFixed(2)}</td>
                             <td>R$ ${month.endBalance.toFixed(2)}</td>
                             <td>${month.trades.length}</td>
-                        </tr>`;
+                        </table>`;
             }
             
-            html += `</tbody></table>`;
+            html += `</tbody>}</div>`;
         }
         
         if (report.years.length > 0) {
@@ -1378,7 +1444,7 @@
                         </tr>`;
             }
             
-            html += `</tbody></table>`;
+            html += `</tbody>}</div>`;
         }
         
         // Adicionar análise de performance
@@ -1623,7 +1689,7 @@
                     <td style="text-align: center;">${month.trades.length}</td>
                 </tr>`;
             }
-            monthlyReportHTML += `</tbody></table></div>`;
+            monthlyReportHTML += `</tbody>}</div>`;
         }
         
         // Gerar tabela de operações
@@ -1830,7 +1896,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${operationsTableHTML || '<td><td colspan="12">Nenhum registro encontrado</td></tr>'}
+                            ${operationsTableHTML || '<tr><td colspan="12">Nenhum registro encontrado</td></tr>'}
                         </tbody>
                     </table>
                 </div>
@@ -2573,12 +2639,12 @@
         let runningTotal = 0;
         let ordersWithAccumulated = ordersReversed.map(order => { runningTotal += order.custoIndividual; return { ...order, custoAcumulado: runningTotal }; });
         const maxOrderCost = ordersDetails[0].custoIndividual;
-        let resultHTML = `<strong>📊 RESULTADO DO GRID PROGRESSIVO</strong><br><br><div class="grid-lotes-destaque">📈 ${numberOfOrders} ORDENS NO TOTAL</div><div>🔹 Ordem mais distante (posição 0): ${lotSize} lote(s)</div><div>🔹 Distanciamento: ${distancePoints.toLocaleString()} pontos entre ordens</div><div>🔹 Cobertura total: ${totalDistance.toLocaleString()} pontos</div><hr style="margin: 10px 0; border-color: #3a3f5e;"><div><strong>💰 Valor por ponto:</strong> R$ ${pointValue.toFixed(6)}</div><div><strong>💰 Custo da ordem mais distante:</strong> R$ ${maxOrderCost.toFixed(2)}</div><div><strong>📊 Custo da ordem mais próxima:</strong> R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</div><hr style="margin: 10px 0; border-color: #3a3f5e;"><div><strong>💰 Custo TOTAL:</strong> <span class="profit-positive" style="font-size: 1.3em;">R$ ${totalCostAllOrders.toFixed(2)}</span></div><div><strong>📊 Custo médio por ordem:</strong> R$ ${(totalCostAllOrders / numberOfOrders).toFixed(2)}</div><hr style="margin: 15px 0; border-color: #3a3f5e;"><div style="text-align: left;"><strong>📋 DETALHAMENTO ORDEM POR ORDEM:</strong></div><div style="text-align: left; max-height: 350px; overflow-y: auto; margin-top: 10px;"><table class="grid-info-table" style="width: 100%; font-size: 0.85em;"><thead><tr style="background: rgba(255,215,0,0.2);"><th># Ordem</th><th>Distância do Início</th><th>Distância Percorrida</th><th>Custo Individual</th><th>Custo Acumulado</th><th>% do Total</th></tr></thead><tbody>`;
+        let resultHTML = `<strong>📊 RESULTADO DO GRID PROGRESSIVO</strong><br><br><div class="grid-lotes-destaque">📈 ${numberOfOrders} ORDENS NO TOTAL</div><div>🔹 Ordem mais distante (posição 0): ${lotSize} lote(s)</div><div>🔹 Distanciamento: ${distancePoints.toLocaleString()} pontos entre ordens</div><div>🔹 Cobertura total: ${totalDistance.toLocaleString()} pontos</div><hr style="margin: 10px 0; border-color: #3a3f5e;"><div><strong>💰 Valor por ponto:</strong> R$ ${pointValue.toFixed(6)}</div><div><strong>💰 Custo da ordem mais distante:</strong> R$ ${maxOrderCost.toFixed(2)}</div><div><strong>📊 Custo da ordem mais próxima:</strong> R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</div><hr style="margin: 10px 0; border-color: #3a3f5e;"><div><strong>💰 Custo TOTAL:</strong> <span class="profit-positive" style="font-size: 1.3em;">R$ ${totalCostAllOrders.toFixed(2)}</span></div><div><strong>📊 Custo médio por ordem:</strong> R$ ${(totalCostAllOrders / numberOfOrders).toFixed(2)}</div><hr style="margin: 15px 0; border-color: #3a3f5e;"><div style="text-align: left;"><strong>📋 DETALHAMENTO ORDEM POR ORDEM:</strong></div><div style="text-align: left; max-height: 350px; overflow-y: auto; margin-top: 10px;"><table class="grid-info-table" style="width: 100%; font-size: 0.85em;"><thead><tr style="background: rgba(255,215,0,0.2);"><th># Ordem</th><th>Distância do Início</th><th>Distância Percorrida</th><th>Custo Individual</th><th>Custo Acumulado</th><th>% do Total</th><tr></thead><tbody>`;
         ordersWithAccumulated.forEach((order, idx) => {
             const percentage = (order.custoIndividual / totalCostAllOrders * 100).toFixed(1);
             resultHTML += `<tr><td style="text-align: center;"><strong>${order.ordem}</strong></td><td style="text-align: right;">${order.distanciaDoInicio.toLocaleString()} pts</td><td style="text-align: right;">${order.distanciaPercorrida.toLocaleString()} pts</td><td style="text-align: right; color: #ffd700;">R$ ${order.custoIndividual.toFixed(2)}</td><td style="text-align: right;">R$ ${order.custoAcumulado.toFixed(2)}</td><td style="text-align: center;">${percentage}%</td></tr>`;
         });
-        resultHTML += `</tbody></table></div><div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;"><strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>📌 Ordem mais distante: <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(2)}</strong> | 📌 Ordem mais próxima: <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</strong><br>📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(2)}</span></div>`;
+        resultHTML += `</tbody>}</div><div style="margin-top: 15px; padding: 10px; background: rgba(76,175,80,0.2); border-radius: 10px; text-align: center;"><strong>✅ RESUMO DA ESCALA PROGRESSIVA:</strong><br>📌 Ordem mais distante: <strong>R$ ${ordersDetails[0].custoIndividual.toFixed(2)}</strong> | 📌 Ordem mais próxima: <strong>R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</strong><br>📌 <span class="profit-positive" style="font-size: 1.1em;">💰 TOTAL ACUMULADO: R$ ${totalCostAllOrders.toFixed(2)}</span></div>`;
         document.getElementById('gridResult').innerHTML = resultHTML;
         cachedGridResult = resultHTML;
     }

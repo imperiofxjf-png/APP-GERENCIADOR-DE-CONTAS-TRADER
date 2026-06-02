@@ -699,10 +699,6 @@
                 <button onclick="printFullReport()" class="menu-btn btn-print" title="Imprimir relatório completo (Web/App)">
                     <span>🖨️</span> <span>Imprimir</span>
                 </button>
-                <!-- NOVO: Botão Relatório Mensal -->
-                <button onclick="showMonthlyReport()" class="menu-btn btn-monthly-report" title="Relatório mensal de lucros e rentabilidade">
-                    <span>📅</span> <span>Relatório Mensal</span>
-                </button>
                 <button onclick="exportBackup()" class="menu-btn btn-backup" title="Fazer backup completo">
                     <span>💾</span> <span>Backup</span>
                 </button>
@@ -714,6 +710,9 @@
             <div class="menu-group">
                 <button onclick="openResetModal()" class="menu-btn btn-reset" title="Resetar conta atual">
                     <span>🔄</span> <span>Resetar</span>
+                </button>
+                <button onclick="showMonthlyReport()" class="menu-btn btn-monthly-report" title="Relatório mensal de lucros e rentabilidade">
+                    <span>📅</span> <span>Relatório Mensal</span>
                 </button>
             </div>
         </div>
@@ -1831,7 +1830,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${operationsTableHTML || '<tr><td colspan="12">Nenhum registro encontrado</td></tr>'}
+                            ${operationsTableHTML || '<td><td colspan="12">Nenhum registro encontrado</td></tr>'}
                         </tbody>
                     </table>
                 </div>
@@ -2703,7 +2702,7 @@
     
     function updateTradesTable() {
         const tbody = document.getElementById('tradesBody');
-        if (trades.length === 0) { tbody.innerHTML = '<tr><td colspan="13">Nenhum registro ainda</tr>'; return; }
+        if (trades.length === 0) { tbody.innerHTML = '<tr><td colspan="13">Nenhum registro ainda</td>'; return; }
         const sorted = [...trades].sort((a, b) => {
             if (a.date !== b.date) return new Date(a.date) - new Date(b.date);
             return new Date(a.timestamp) - new Date(b.timestamp);
@@ -2852,4 +2851,4 @@
     });
 </script>
 </body>
-</html>
+        </html>

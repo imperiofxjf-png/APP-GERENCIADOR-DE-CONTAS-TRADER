@@ -7,10 +7,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Império FX JF">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3a'/%3E%3Ctext x='50' y='67' font-size='50' text-anchor='middle' fill='%23ffd700' font-weight='bold'%3E💰%3C/text%3E%3C/svg%3E">
     
-    <!-- MANIFEST EXTERNO - CORRIGE INSTALAÇÃO NATIVA -->
-    <link rel="manifest" href="manifest.json">
+    <!-- ÍCONES PARA INSTALAÇÃO NATIVA - VERSÃO MELHORADA -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3a'/%3E%3Ctext x='50' y='67' font-size='55' text-anchor='middle' fill='%23ffd700' font-weight='bold'%3E📈%3C/text%3E%3C/svg%3E">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3a'/%3E%3Ctext x='50' y='67' font-size='55' text-anchor='middle' fill='%23ffd700' font-weight='bold'%3E📈%3C/text%3E%3C/svg%3E">
     
     <title>Império FX JF - Gestão Financeira do Trader</title>
     <style>
@@ -642,76 +642,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/idb@8.0.0/build/umd.js"></script>
-    
-    <!-- SERVICE WORKER ATUALIZADO - VERSÃO 4 COM MANIFEST EXTERNO -->
-    <script>
-        (function() {
-            const SW_VERSION = 'v4';
-            const CACHE_NAME = `imperiofx-cache-${SW_VERSION}`;
-            
-            const swCode = `// Service Worker para Império FX JF - Versão ${SW_VERSION}
-const CACHE_NAME = '${CACHE_NAME}';
-const urlsToCache = ['.', 'index.html', 'manifest.json'];
-
-self.addEventListener('install', event => {
-    console.log('SW Instalando versão ${SW_VERSION}');
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(urlsToCache))
-            .then(() => self.skipWaiting())
-    );
-});
-
-self.addEventListener('fetch', event => {
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => response || fetch(event.request))
-    );
-});
-
-self.addEventListener('activate', event => {
-    console.log('SW Ativando versão ${SW_VERSION}');
-    event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cache => {
-                    if (cache !== CACHE_NAME && cache.startsWith('imperiofx-cache-')) {
-                        console.log('Removendo cache antigo:', cache);
-                        return caches.delete(cache);
-                    }
-                })
-            );
-        }).then(() => {
-            console.log('SW pronto para controlar clientes');
-            return self.clients.claim();
-        })
-    );
-});`;
-
-            const blob = new Blob([swCode], { type: 'application/javascript' });
-            const swUrl = URL.createObjectURL(blob);
-            
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(registrations => {
-                    for (let registration of registrations) {
-                        console.log('Desregistrando SW antigo:', registration);
-                        registration.unregister();
-                    }
-                }).then(() => {
-                    return navigator.serviceWorker.register(swUrl);
-                }).then(reg => {
-                    console.log(`✅ Service Worker ${SW_VERSION} registrado com sucesso!`);
-                    setTimeout(() => URL.revokeObjectURL(swUrl), 1000);
-                    
-                    if (reg.waiting) {
-                        reg.waiting.postMessage({ action: 'skipWaiting' });
-                    }
-                }).catch(err => {
-                    console.warn('⚠️ Service Worker não registrado:', err);
-                });
-            }
-        })();
-    </script>
 </head>
 <body>
 <div class="container">
@@ -1014,6 +944,130 @@ self.addEventListener('activate', event => {
 </div>
 
 <script>
+    // ============================================================
+    // 🔧 MANIFEST.JSON DINÂMICO (CORRIGE INSTALAÇÃO NATIVA)
+    // ============================================================
+    (function registerManifest() {
+        const manifestData = {
+            name: "Império FX JF",
+            short_name: "Império FX",
+            description: "Gestão Financeira do Trader - Múltiplas Contas",
+            start_url: ".",
+            display: "standalone",
+            theme_color: "#1a1f3a",
+            background_color: "#1a1f3a",
+            orientation: "portrait",
+            scope: ".",
+            icons: [
+                {
+                    src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3a'/%3E%3Ctext x='50' y='67' font-size='55' text-anchor='middle' fill='%23ffd700' font-weight='bold'%3E📈%3C/text%3E%3C/svg%3E",
+                    sizes: "any",
+                    type: "image/svg+xml",
+                    purpose: "any maskable"
+                },
+                {
+                    src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3a'/%3E%3Ctext x='50' y='67' font-size='55' text-anchor='middle' fill='%23ffd700' font-weight='bold'%3E📈%3C/text%3E%3C/svg%3E",
+                    sizes: "192x192",
+                    type: "image/svg+xml"
+                },
+                {
+                    src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3a'/%3E%3Ctext x='50' y='67' font-size='55' text-anchor='middle' fill='%23ffd700' font-weight='bold'%3E📈%3C/text%3E%3C/svg%3E",
+                    sizes: "512x512",
+                    type: "image/svg+xml"
+                }
+            ]
+        };
+        
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = manifestURL;
+        document.head.appendChild(manifestLink);
+        
+        console.log('✅ Manifest.json registrado dinamicamente');
+    })();
+    
+    // ============================================================
+    // 🔧 SERVICE WORKER CORRIGIDO - URL FIXA
+    // ============================================================
+    (function registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            const SW_VERSION = 'v5_fixed';
+            const CACHE_NAME = `imperiofx-cache-${SW_VERSION}`;
+            
+            const swCode = `// Service Worker Império FX JF - Versão ${SW_VERSION}
+const CACHE_NAME = '${CACHE_NAME}';
+const urlsToCache = ['.', 'index.html'];
+
+self.addEventListener('install', event => {
+    console.log('✅ SW Instalando versão ${SW_VERSION}');
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(urlsToCache))
+            .then(() => self.skipWaiting())
+    );
+});
+
+self.addEventListener('fetch', event => {
+    event.respondWith(
+        caches.match(event.request)
+            .then(response => {
+                if (response) return response;
+                return fetch(event.request).then(fetchResponse => {
+                    if (fetchResponse && fetchResponse.status === 200) {
+                        const responseToCache = fetchResponse.clone();
+                        caches.open(CACHE_NAME).then(cache => {
+                            cache.put(event.request, responseToCache);
+                        });
+                    }
+                    return fetchResponse;
+                });
+            })
+            .catch(() => {
+                return caches.match('.');
+            })
+    );
+});
+
+self.addEventListener('activate', event => {
+    console.log('✅ SW Ativando versão ${SW_VERSION}');
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cache => {
+                    if (cache !== CACHE_NAME && cache.startsWith('imperiofx-cache-')) {
+                        console.log('🗑️ Removendo cache antigo:', cache);
+                        return caches.delete(cache);
+                    }
+                })
+            );
+        }).then(() => self.clients.claim())
+    );
+});`;
+            
+            // Desregistra SWS antigos primeiro
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                for (let registration of registrations) {
+                    console.log('Desregistrando SW antigo:', registration);
+                    registration.unregister();
+                }
+            }).then(() => {
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swURL = URL.createObjectURL(blob);
+                
+                return navigator.serviceWorker.register(swURL).then(reg => {
+                    console.log(`✅ Service Worker ${SW_VERSION} registrado!`);
+                    URL.revokeObjectURL(swURL);
+                    return reg;
+                });
+            }).catch(err => {
+                console.warn('⚠️ Service Worker não registrado:', err);
+            });
+        }
+    })();
+    
     const DB_NAME = 'ImperioFXJF_DB';
     const DB_VERSION = 2;
     let db = null;
@@ -1055,31 +1109,10 @@ self.addEventListener('activate', event => {
     }
     
     async function installApp() {
-        console.log('🔄 Verificando e limpando Service Workers antes da instalação...');
-        
-        if ('serviceWorker' in navigator) {
-            try {
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                for (let registration of registrations) {
-                    await registration.unregister();
-                    console.log('✅ Service Worker desregistrado:', registration);
-                }
-                
-                const cacheNames = await caches.keys();
-                for (let cacheName of cacheNames) {
-                    if (cacheName.startsWith('imperiofx-cache-')) {
-                        await caches.delete(cacheName);
-                        console.log('🗑️ Cache removido:', cacheName);
-                    }
-                }
-            } catch (err) {
-                console.warn('Erro ao limpar Service Workers:', err);
-            }
-        }
+        console.log('🔄 Tentando instalação nativa...');
         
         if (isAppInstalled()) {
-            if (confirm('⚠️ O aplicativo já parece instalado.\n\nDeseja FORÇAR a reinstalação? Isso limpará os dados residuais e reinstalará o app.\n\n✅ Seus dados financeiros NÃO serão perdidos.')) {
-                localStorage.setItem('sw_clean_requested', 'true');
+            if (confirm('⚠️ O aplicativo já parece instalado.\n\nDeseja FORÇAR a reinstalação?\n\n✅ Seus dados financeiros NÃO serão perdidos.')) {
                 localStorage.removeItem('app_installed_flag');
                 localStorage.removeItem('app_installed_version');
                 alert('🧹 Limpeza agendada! O app será recarregado.\n\nApós recarregar, aguarde 2 segundos e clique novamente em "Instalar App".');
@@ -1123,12 +1156,12 @@ self.addEventListener('activate', event => {
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        console.log('beforeinstallprompt event captured');
+        console.log('✅ beforeinstallprompt event captured - instalação nativa disponível!');
         updateInstallButton();
     });
     
     window.addEventListener('appinstalled', () => {
-        console.log('App installed successfully');
+        console.log('✅ App installed successfully');
         localStorage.setItem('app_installed_flag', 'true');
         localStorage.setItem('app_installed_version', Date.now().toString());
         deferredPrompt = null;
@@ -1265,7 +1298,7 @@ self.addEventListener('activate', event => {
                 const resultClass = month.operationalResult >= 0 ? 'profit-positive' : 'profit-negative';
                 html += `<tr><td><strong>${month.name}</strong></td><td class="profit-positive">R$ ${month.totalProfit.toFixed(2)}</td><td class="profit-negative">R$ ${month.totalLoss.toFixed(2)}</td><td class="${resultClass}">${month.operationalResult >= 0 ? '+' : ''}R$ ${month.operationalResult.toFixed(2)}</td><td class="${rentClass}">${month.percentageReturn >= 0 ? '+' : ''}${month.percentageReturn.toFixed(2)}%</td><td>R$ ${month.startBalance.toFixed(2)}</td><td>R$ ${month.endBalance.toFixed(2)}</td><td>${month.trades.length}</td></tr>`;
             }
-            html += `</tbody>}</div>`;
+            html += `</tbody></div>`;
         }
         
         if (report.years.length > 0) {
@@ -1276,7 +1309,7 @@ self.addEventListener('activate', event => {
                 const resultClass = year.operationalResult >= 0 ? 'profit-positive' : 'profit-negative';
                 html += `<tr><td><strong>${year.year}</strong></td><td class="profit-positive">R$ ${year.totalProfit.toFixed(2)}</td><td class="profit-negative">R$ ${year.totalLoss.toFixed(2)}</td><td class="${resultClass}">${year.operationalResult >= 0 ? '+' : ''}R$ ${year.operationalResult.toFixed(2)}</td><td class="${rentClass}">${year.percentageReturn >= 0 ? '+' : ''}${year.percentageReturn.toFixed(2)}%</td><td>R$ ${year.startBalance ? year.startBalance.toFixed(2) : '-'}</td><td>R$ ${year.endBalance ? year.endBalance.toFixed(2) : '-'}</td><td>${totalTrades}</td></tr>`;
             }
-            html += `</tbody>}</div>`;
+            html += `</tbody></div>`;
         }
         
         const positiveMonths = report.months.filter(m => m.percentageReturn > 0).length;
@@ -1417,7 +1450,7 @@ self.addEventListener('activate', event => {
         const maxPositive = Math.max(...validPercentages,0).toFixed(2);
         const maxNegative = Math.min(...validPercentages,0).toFixed(2);
         
-        return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório Império FX JF - ${currentAccount}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;padding:20px;background:white;color:#333}.header{text-align:center;margin-bottom:30px;padding:20px;border-bottom:3px solid #ffd700}.header h1{color:#d4a000;font-size:28px}.header p{color:#666;margin-top:10px}.section{margin-bottom:30px;page-break-inside:avoid}.section-title{font-size:20px;color:#d4a000;border-left:4px solid #d4a000;padding-left:12px;margin-bottom:15px;margin-top:20px}.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:20px}.metric-card{background:#f5f5f5;padding:15px;border-radius:10px;text-align:center;border:1px solid #e0e0e0}.metric-card h4{font-size:12px;color:#666;margin-bottom:8px}.metric-card .value{font-size:18px;font-weight:bold;color:#d4a000}.profit-positive{color:#008000!important;font-weight:bold}.profit-negative{color:#ff0000!important;font-weight:bold}table{width:100%;border-collapse:collapse;margin-top:15px;font-size:11px}th{background:#f0f0f0;padding:10px;border:1px solid #ddd;text-align:center}td{padding:8px;border:1px solid #ddd;text-align:center}.calc-result-box{background:#f9f9f9;padding:15px;border-radius:10px;margin-top:10px;border:1px solid #e0e0e0}.footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid #ddd;font-size:10px;color:#999}@media print{body{padding:0;margin:0}.section{page-break-inside:avoid}table{page-break-inside:avoid}}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Relatório Completo de Gestão Financeira</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data de emissão:</strong> ${new Date().toLocaleString()}</p><p><strong>Total de registros:</strong> ${trades.length} operações</p></div><div class="section"><div class="section-title">📊 RESUMO EXECUTIVO</div><div class="metrics-grid"><div class="metric-card"><h4>💰 Saldo Inicial</h4><div class="value">R$ ${(systemInitialBalance||0).toFixed(2)}</div></div><div class="metric-card"><h4>📈 Lucro Total</h4><div class="value profit-positive">R$ ${totalProfit.toFixed(2)}</div></div><div class="metric-card"><h4>📉 Perda Total</h4><div class="value profit-negative">R$ ${totalLoss.toFixed(2)}</div></div><div class="metric-card"><h4>🏧 Saques</h4><div class="value profit-negative">R$ ${totalWithdraw.toFixed(2)}</div></div><div class="metric-card"><h4>💰 Aportes</h4><div class="value profit-positive">R$ ${totalDeposit.toFixed(2)}</div></div><div class="metric-card"><h4>📊 Resultado Op.</h4><div class="value ${totalOperationalResult>=0?'profit-positive':'profit-negative'}">R$ ${totalOperationalResult.toFixed(2)}</div></div><div class="metric-card"><h4>🏁 Saldo Final</h4><div class="value">R$ ${finalBalance.toFixed(2)}</div></div><div class="metric-card"><h4>📈 Rentabilidade %</h4><div class="value ${totalOperationalPercentage>=0?'profit-positive':'profit-negative'}">${totalOperationalPercentage>=0?'+':''}${totalOperationalPercentage.toFixed(2)}%</div></div></div><div class="metrics-grid" style="margin-top:10px;"><div class="metric-card"><h4>📊 % Sobre Total Atual</h4><div class="value ${percentageOverTotal>=0?'profit-positive':'profit-negative'}">${percentageOverTotal>=0?'+':''}${percentageOverTotal.toFixed(2)}%</div></div></div></div>${monthlyReportHTML}<div class="section"><div class="section-title">📈 MÉTRICAS DE PERFORMANCE</div><div class="metrics-grid"><div class="metric-card"><h4>🎯 Taxa de Acerto</h4><div class="value profit-positive">${hitRate}%</div></div><div class="metric-card"><h4>📊 Média % por Trade</h4><div class="value ${parseFloat(avgPercentage)>=0?'profit-positive':'profit-negative'}">${avgPercentage>=0?'+':''}${avgPercentage}%</div></div><div class="metric-card"><h4>🏆 Maior Ganho %</h4><div class="value profit-positive">+${maxPositive}%</div></div><div class="metric-card"><h4>💔 Maior Perda %</h4><div class="value profit-negative">${maxNegative}%</div></div><div class="metric-card"><h4>✅ Trades Positivos</h4><div class="value profit-positive">${positiveTrades}</div></div><div class="metric-card"><h4>❌ Trades Negativos</h4><div class="value profit-negative">${negativeTrades}</div></div></div></div><div class="section"><div class="section-title">📋 HISTÓRICO COMPLETO DE OPERAÇÕES</div><div style="overflow-x:auto;"><table><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>%</th><th>% Sobre Total</th><th>Lotes</th><th>Ativo</th><th>Saldo Final</th></tr></thead><tbody>${operationsTableHTML||'<tr><td colspan="12">Nenhum registro encontrado</td></tr>'}</tbody>}</div></div><div class="section"><div class="section-title">🧮 RESULTADOS DAS CALCULADORAS</div><div style="margin-top:15px;"><h3 style="color:#d4a000;margin-bottom:10px;">📐 Calculadora Hedge</h3><div class="calc-result-box">${cachedHedgeResult||'<span style="color:#999;">Nenhum cálculo realizado ainda. Preencha os dados na calculadora Hedge e clique em Calcular.</span>'}</div></div><div style="margin-top:20px;"><h3 style="color:#d4a000;margin-bottom:10px;">📏 Calculadora Grid Progressivo</h3><div class="calc-result-box">${cachedGridResult||'<span style="color:#999;">Nenhum cálculo realizado ainda. Preencha os dados na calculadora Grid e clique em Calcular.</span>'}</div></div><div style="margin-top:20px;"><h3 style="color:#d4a000;margin-bottom:10px;">📈 Calculadora Juros Compostos</h3><div class="calc-result-box">${cachedCompoundResult||'<span style="color:#999;">Nenhum cálculo realizado ainda. Preencha os dados na calculadora Juros Compostos e clique em Calcular.</span>'}</div></div></div><div class="footer"><p>Relatório gerado pelo Sistema Império FX JF - Gestão Financeira do Trader</p><p>Documento emitido em ${new Date().toLocaleString()}</p></div></body></html>`;
+        return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório Império FX JF - ${currentAccount}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;padding:20px;background:white;color:#333}.header{text-align:center;margin-bottom:30px;padding:20px;border-bottom:3px solid #ffd700}.header h1{color:#d4a000;font-size:28px}.header p{color:#666;margin-top:10px}.section{margin-bottom:30px;page-break-inside:avoid}.section-title{font-size:20px;color:#d4a000;border-left:4px solid #d4a000;padding-left:12px;margin-bottom:15px;margin-top:20px}.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:20px}.metric-card{background:#f5f5f5;padding:15px;border-radius:10px;text-align:center;border:1px solid #e0e0e0}.metric-card h4{font-size:12px;color:#666;margin-bottom:8px}.metric-card .value{font-size:18px;font-weight:bold;color:#d4a000}.profit-positive{color:#008000!important;font-weight:bold}.profit-negative{color:#ff0000!important;font-weight:bold}table{width:100%;border-collapse:collapse;margin-top:15px;font-size:11px}th{background:#f0f0f0;padding:10px;border:1px solid #ddd;text-align:center}td{padding:8px;border:1px solid #ddd;text-align:center}.calc-result-box{background:#f9f9f9;padding:15px;border-radius:10px;margin-top:10px;border:1px solid #e0e0e0}.footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid #ddd;font-size:10px;color:#999}@media print{body{padding:0;margin:0}.section{page-break-inside:avoid}table{page-break-inside:avoid}}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Relatório Completo de Gestão Financeira</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data de emissão:</strong> ${new Date().toLocaleString()}</p><p><strong>Total de registros:</strong> ${trades.length} operações</p></div><div class="section"><div class="section-title">📊 RESUMO EXECUTIVO</div><div class="metrics-grid"><div class="metric-card"><h4>💰 Saldo Inicial</h4><div class="value">R$ ${(systemInitialBalance||0).toFixed(2)}</div></div><div class="metric-card"><h4>📈 Lucro Total</h4><div class="value profit-positive">R$ ${totalProfit.toFixed(2)}</div></div><div class="metric-card"><h4>📉 Perda Total</h4><div class="value profit-negative">R$ ${totalLoss.toFixed(2)}</div></div><div class="metric-card"><h4>🏧 Saques</h4><div class="value profit-negative">R$ ${totalWithdraw.toFixed(2)}</div></div><div class="metric-card"><h4>💰 Aportes</h4><div class="value profit-positive">R$ ${totalDeposit.toFixed(2)}</div></div><div class="metric-card"><h4>📊 Resultado Op.</h4><div class="value ${totalOperationalResult>=0?'profit-positive':'profit-negative'}">R$ ${totalOperationalResult.toFixed(2)}</div></div><div class="metric-card"><h4>🏁 Saldo Final</h4><div class="value">R$ ${finalBalance.toFixed(2)}</div></div><div class="metric-card"><h4>📈 Rentabilidade %</h4><div class="value ${totalOperationalPercentage>=0?'profit-positive':'profit-negative'}">${totalOperationalPercentage>=0?'+':''}${totalOperationalPercentage.toFixed(2)}%</div></div></div><div class="metrics-grid" style="margin-top:10px;"><div class="metric-card"><h4>📊 % Sobre Total Atual</h4><div class="value ${percentageOverTotal>=0?'profit-positive':'profit-negative'}">${percentageOverTotal>=0?'+':''}${percentageOverTotal.toFixed(2)}%</div></div></div></div>${monthlyReportHTML}<div class="section"><div class="section-title">📈 MÉTRICAS DE PERFORMANCE</div><div class="metrics-grid"><div class="metric-card"><h4>🎯 Taxa de Acerto</h4><div class="value profit-positive">${hitRate}%</div></div><div class="metric-card"><h4>📊 Média % por Trade</h4><div class="value ${parseFloat(avgPercentage)>=0?'profit-positive':'profit-negative'}">${avgPercentage>=0?'+':''}${avgPercentage}%</div></div><div class="metric-card"><h4>🏆 Maior Ganho %</h4><div class="value profit-positive">+${maxPositive}%</div></div><div class="metric-card"><h4>💔 Maior Perda %</h4><div class="value profit-negative">${maxNegative}%</div></div><div class="metric-card"><h4>✅ Trades Positivos</h4><div class="value profit-positive">${positiveTrades}</div></div><div class="metric-card"><h4>❌ Trades Negativos</h4><div class="value profit-negative">${negativeTrades}</div></div></div></div><div class="section"><div class="section-title">📋 HISTÓRICO COMPLETO DE OPERAÇÕES</div><div style="overflow-x:auto;"><table><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>%</th><th>% Sobre Total</th><th>Lotes</th><th>Ativo</th><th>Saldo Final</th></tr></thead><tbody>${operationsTableHTML||'<tr><td colspan="12">Nenhum registro encontrado</td></tr>'}</tbody></table></div></div><div class="section"><div class="section-title">🧮 RESULTADOS DAS CALCULADORAS</div><div style="margin-top:15px;"><h3 style="color:#d4a000;margin-bottom:10px;">📐 Calculadora Hedge</h3><div class="calc-result-box">${cachedHedgeResult||'<span style="color:#999;">Nenhum cálculo realizado ainda. Preencha os dados na calculadora Hedge e clique em Calcular.</span>'}</div></div><div style="margin-top:20px;"><h3 style="color:#d4a000;margin-bottom:10px;">📏 Calculadora Grid Progressivo</h3><div class="calc-result-box">${cachedGridResult||'<span style="color:#999;">Nenhum cálculo realizado ainda. Preencha os dados na calculadora Grid e clique em Calcular.</span>'}</div></div><div style="margin-top:20px;"><h3 style="color:#d4a000;margin-bottom:10px;">📈 Calculadora Juros Compostos</h3><div class="calc-result-box">${cachedCompoundResult||'<span style="color:#999;">Nenhum cálculo realizado ainda. Preencha os dados na calculadora Juros Compostos e clique em Calcular.</span>'}</div></div></div><div class="footer"><p>Relatório gerado pelo Sistema Império FX JF - Gestão Financeira do Trader</p><p>Documento emitido em ${new Date().toLocaleString()}</p></div></body></html>`;
     }
     
     async function initDatabase() {
@@ -1921,7 +1954,7 @@ self.addEventListener('activate', event => {
             trades.forEach((t,i)=>{
                 rows += `<tr><td style="border:1px solid #ccc;padding:8px;">${i+1}</td><td style="border:1px solid #ccc;padding:8px;">${t.date}</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">R$ ${(t.profit||0).toFixed(2)}</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">R$ ${(t.loss||0).toFixed(2)}</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">R$ ${(t.withdraw||0).toFixed(2)}</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">R$ ${(t.deposit||0).toFixed(2)}</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">R$ ${(t.operationalResult||0).toFixed(2)}</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">${(t.dailyPercentage||0).toFixed(2)}%</td><td style="border:1px solid #ccc;padding:8px;text-align:right;">${(t.percentageOverTotal||0).toFixed(2)}%</td><td style="border:1px solid #ccc;padding:8px;">${t.asset||'-'}</td></tr>`;
             });
-            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:'Segoe UI',Arial;margin:30px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;background:#f9f9f9}.summary h3{margin-top:0;color:#d4a000}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;border:1px solid #000}td{padding:8px;border:1px solid #ccc}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO</h3><p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance||0).toFixed(2)}</p><p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>Rentabilidade (S/Inicial):</strong> ${totalPercent}%</p><p><strong>Rentabilidade (S/Total):</strong> ${totalPercentOverTotal}%</p><p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p></div><h3>📋 OPERAÇÕES</h3></table><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>% Op.</th><th>% S/Total</th><th>Ativo</th></tr></thead><tbody>${rows}</tbody>}</div><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
+            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Império FX JF</title><style>body{font-family:'Segoe UI',Arial;margin:30px}h1{color:#ffd700;text-align:center}.summary{border:2px solid #333;padding:15px;margin-bottom:25px;background:#f9f9f9}.summary h3{margin-top:0;color:#d4a000}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#ffd700;color:#000;padding:10px;border:1px solid #000}td{padding:8px;border:1px solid #ccc}</style></head><body><div class="header"><h1>🏛️ IMPÉRIO FX JF</h1><h2>Gestão Financeira do Trader</h2><p><strong>Conta:</strong> ${currentAccount}</p><p><strong>Data:</strong> ${new Date().toLocaleString()}</p></div><div class="summary"><h3>📊 RESUMO</h3><p><strong>Saldo Inicial:</strong> R$ ${(systemInitialBalance||0).toFixed(2)}</p><p><strong>Lucro Total:</strong> R$ ${totalProfit.toFixed(2)}</p><p><strong>Perda Total:</strong> R$ ${totalLoss.toFixed(2)}</p><p><strong>Resultado:</strong> R$ ${totalOperational.toFixed(2)}</p><p><strong>Rentabilidade (S/Inicial):</strong> ${totalPercent}%</p><p><strong>Rentabilidade (S/Total):</strong> ${totalPercentOverTotal}%</p><p><strong>Saldo Final:</strong> R$ ${finalBalance.toFixed(2)}</p></div><h3>📋 OPERAÇÕES</h3><table><thead><tr><th>#</th><th>Data</th><th>Lucro</th><th>Perda</th><th>Saque</th><th>Aporte</th><th>Res.Op</th><th>% Op.</th><th>% S/Total</th><th>Ativo</th></tr></thead><tbody>${rows}</tbody>}</div><div class="footer"><p>IMPÉRIO FX JF - Sistema Profissional</p></div></body></html>`;
             const fileName = `ImperioFXJF_Word_${currentAccount}_${new Date().toISOString().split('T')[0]}.doc`;
             const blob = new Blob([htmlContent], {type:'application/msword'});
             const url = URL.createObjectURL(blob);
@@ -2006,7 +2039,7 @@ self.addEventListener('activate', event => {
         let runningTotal = 0;
         let ordersWithAccumulated = ordersReversed.map(order=>{ runningTotal+=order.custoIndividual; return {...order, custoAcumulado:runningTotal}; });
         const maxOrderCost = ordersDetails[0].custoIndividual;
-        let resultHTML = `<strong>📊 RESULTADO DO GRID PROGRESSIVO</strong><br><br><div class="grid-lotes-destaque">📈 ${numberOfOrders} ORDENS NO TOTAL</div><div>🔹 Ordem mais distante (posição 0): ${lotSize} lote(s)</div><div>🔹 Distanciamento: ${distancePoints.toLocaleString()} pontos entre ordens</div><div>🔹 Cobertura total: ${totalDistance.toLocaleString()} pontos</div><hr style="margin:10px 0; border-color:#3a3f5e;"><div><strong>💰 Valor por ponto:</strong> R$ ${pointValue.toFixed(6)}</div><div><strong>💰 Custo da ordem mais distante:</strong> R$ ${maxOrderCost.toFixed(2)}</div><div><strong>📊 Custo da ordem mais próxima:</strong> R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</div><hr style="margin:10px 0; border-color:#3a3f5e;"><div><strong>💰 Custo TOTAL:</strong> <span class="profit-positive" style="font-size:1.3em;">R$ ${totalCostAllOrders.toFixed(2)}</span></div><div><strong>📊 Custo médio por ordem:</strong> R$ ${(totalCostAllOrders/numberOfOrders).toFixed(2)}</div><hr style="margin:15px 0; border-color:#3a3f5e;"><div style="text-align:left;"><strong>📋 DETALHAMENTO ORDEM POR ORDEM:</strong></div><div style="text-align:left; max-height:350px; overflow-y:auto; margin-top:10px;"><table class="grid-info-table" style="width:100%; font-size:0.85em;"><thead><tr style="background:rgba(255,215,0,0.2);"><th># Ordem</th><th>Distância do Início</th><th>Distância Percorrida</th><th>Custo Individual</th><th>Custo Acumulado</th><th>% do Total</th></tr></thead><tbody>`;
+        let resultHTML = `<strong>📊 RESULTADO DO GRID PROGRESSIVO</strong><br><br><div class="grid-lotes-destaque">📈 ${numberOfOrders} ORDENS NO TOTAL</div><div>🔹 Ordem mais distante (posição 0): ${lotSize} lote(s)</div><div>🔹 Distanciamento: ${distancePoints.toLocaleString()} pontos entre ordens</div><div>🔹 Cobertura total: ${totalDistance.toLocaleString()} pontos</div><hr style="margin:10px 0; border-color:#3a3f5e;"><div><strong>💰 Valor por ponto:</strong> R$ ${pointValue.toFixed(6)}</div><div><strong>💰 Custo da ordem mais distante:</strong> R$ ${maxOrderCost.toFixed(2)}</div><div><strong>📊 Custo da ordem mais próxima:</strong> R$ ${ordersDetails[numberOfOrders-1].custoIndividual.toFixed(2)}</div><hr style="margin:10px 0; border-color:#3a3f5e;"><div><strong>💰 Custo TOTAL:</strong> <span class="profit-positive" style="font-size:1.3em;">R$ ${totalCostAllOrders.toFixed(2)}</span></div><div><strong>📊 Custo médio por ordem:</strong> R$ ${(totalCostAllOrders/numberOfOrders).toFixed(2)}</div><hr style="margin:15px 0; border-color:#3a3f5e;"><div style="text-align:left;"><strong>📋 DETALHAMENTO ORDEM POR ORDEM:</strong></div><div style="text-align:left; max-height:350px; overflow-y:auto; margin-top:10px;"><table class="grid-info-table" style="width:100%; font-size:0.85em;"><thead><tr style="background:rgba(255,215,0,0.2);"><th># Ordem</th><th>Distância do Início</th><th>Distância Percorrida</th><th>Custo Individual</th><th>Custo Acumulado</th><th>% do Total</th></table></thead><tbody>`;
         ordersWithAccumulated.forEach((order,idx)=>{
             const percentage = (order.custoIndividual/totalCostAllOrders*100).toFixed(1);
             resultHTML += `<tr><td style="text-align:center;"><strong>${order.ordem}</strong></td><td style="text-align:right;">${order.distanciaDoInicio.toLocaleString()} pts</td><td style="text-align:right;">${order.distanciaPercorrida.toLocaleString()} pts</td><td style="text-align:right;color:#ffd700;">R$ ${order.custoIndividual.toFixed(2)}</td><td style="text-align:right;">R$ ${order.custoAcumulado.toFixed(2)}</td><td style="text-align:center;">${percentage}%</td></tr>`;
@@ -2408,83 +2441,8 @@ self.addEventListener('activate', event => {
         const savedTheme = await getSetting('theme');
         if(savedTheme === 'light') document.body.classList.add('light-mode');
         
-        console.log('Sistema inicializado com armazenamento ILIMITADO e funcionalidade de impressão aprimorada!');
+        console.log('✅ Sistema inicializado com armazenamento ILIMITADO e INSTALAÇÃO NATIVA CORRIGIDA!');
     });
-</script>
-
-<!-- 🔧 SCRIPT DE LIMPEZA FORÇADA PARA REINSTALAÇÃO - NÃO ALTERA DADOS OU FUNCIONALIDADES -->
-<script>
-    (function forceCleanForReinstall() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const forceClean = urlParams.get('clean') === 'true';
-        
-        if (forceClean || localStorage.getItem('sw_clean_requested') === 'true') {
-            console.log('🧹 Executando limpeza forçada de Service Workers para reinstalação...');
-            
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(registrations => {
-                    for (let registration of registrations) {
-                        registration.unregister();
-                        console.log('✅ Service Worker desregistrado');
-                    }
-                }).then(() => {
-                    return caches.keys();
-                }).then(cacheNames => {
-                    for (let cacheName of cacheNames) {
-                        if (cacheName.includes('imperiofx') || cacheName.includes('sw-cache')) {
-                            caches.delete(cacheName);
-                            console.log('🗑️ Cache removido:', cacheName);
-                        }
-                    }
-                }).then(() => {
-                    localStorage.removeItem('sw_clean_requested');
-                    localStorage.removeItem('app_installed_flag');
-                    localStorage.removeItem('app_installed_version');
-                    console.log('✅ Limpeza concluída! Recarregando...');
-                    
-                    if (forceClean) {
-                        setTimeout(() => {
-                            window.location.href = window.location.pathname;
-                        }, 500);
-                    }
-                });
-            } else {
-                localStorage.removeItem('sw_clean_requested');
-                if (forceClean) {
-                    window.location.href = window.location.pathname;
-                }
-            }
-        }
-        
-        setTimeout(() => {
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-            const hasInstallIssue = localStorage.getItem('reinstall_helper_shown') !== 'true';
-            
-            if (!isStandalone && hasInstallIssue && document.getElementById('installBtn')) {
-                const helpBtn = document.createElement('div');
-                helpBtn.id = 'reinstallHelper';
-                helpBtn.innerHTML = `
-                    <div style="position:fixed; bottom:80px; right:10px; z-index:9999; background:#ff9800; padding:12px 20px; border-radius:50px; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,0.3); font-size:13px; font-weight:bold; color:#000; display:flex; align-items:center; gap:8px;">
-                        🔧 <span>Problemas para reinstalar? Clique aqui</span>
-                    </div>
-                `;
-                helpBtn.onclick = () => {
-                    if (confirm('🔧 CORREÇÃO DE REINSTALAÇÃO\n\nIsso irá:\n✅ Limpar Service Workers antigos\n✅ Limpar cache do app\n✅ Remover flags de instalação\n\n⚠️ Seus DADOS FINANCEIROS serão MANTIDOS!\n\nDeseja continuar?')) {
-                        localStorage.setItem('sw_clean_requested', 'true');
-                        localStorage.setItem('reinstall_helper_shown', 'true');
-                        alert('🧹 Limpeza agendada! O app será recarregado.\n\nApós recarregar, feche o navegador, espere 5 segundos e clique em "Instalar App" novamente.');
-                        window.location.href = window.location.pathname + '?clean=true';
-                    }
-                };
-                document.body.appendChild(helpBtn);
-                
-                setTimeout(() => {
-                    const btn = document.getElementById('reinstallHelper');
-                    if (btn) btn.remove();
-                }, 10000);
-            }
-        }, 2000);
-    })();
 </script>
 
 </body>
